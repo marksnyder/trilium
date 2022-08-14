@@ -1,9 +1,16 @@
 export default class LoadResults {
-    constructor(treeCache) {
-        this.treeCache = treeCache;
+    constructor(entityChanges) {
+        this.entities = {};
 
-        this.noteIdToSourceId = {};
-        this.sourceIdToNoteIds = {};
+        for (const {entityId, entityName, entity} of entityChanges) {
+            if (entity) {
+                this.entities[entityName] = this.entities[entityName] || [];
+                this.entities[entityName][entityId] = entity;
+            }
+        }
+
+        this.noteIdToComponentId = {};
+        this.componentIdToNoteIds = {};
 
         this.branches = [];
 
@@ -13,36 +20,40 @@ export default class LoadResults {
 
         this.noteRevisions = [];
 
-        this.contentNoteIdToSourceId = [];
+        this.contentNoteIdToComponentId = [];
 
         this.options = [];
     }
 
-    addNote(noteId, sourceId) {
-        this.noteIdToSourceId[noteId] = this.noteIdToSourceId[noteId] || [];
+    getEntity(entityName, entityId) {
+        return this.entities[entityName]?.[entityId];
+    }
 
-        if (!this.noteIdToSourceId[noteId].includes(sourceId)) {
-            this.noteIdToSourceId[noteId].push(sourceId);
+    addNote(noteId, componentId) {
+        this.noteIdToComponentId[noteId] = this.noteIdToComponentId[noteId] || [];
+
+        if (!this.noteIdToComponentId[noteId].includes(componentId)) {
+            this.noteIdToComponentId[noteId].push(componentId);
         }
 
-        this.sourceIdToNoteIds[sourceId] = this.sourceIdToNoteIds[sourceId] || [];
+        this.componentIdToNoteIds[componentId] = this.componentIdToNoteIds[componentId] || [];
 
-        if (!this.sourceIdToNoteIds[sourceId]) {
-            this.sourceIdToNoteIds[sourceId].push(noteId);
+        if (!this.componentIdToNoteIds[componentId]) {
+            this.componentIdToNoteIds[componentId].push(noteId);
         }
     }
 
-    addBranch(branchId, sourceId) {
-        this.branches.push({branchId, sourceId});
+    addBranch(branchId, componentId) {
+        this.branches.push({branchId, componentId});
     }
 
     getBranches() {
         return this.branches
-            .map(row => this.treeCache.branches[row.branchId])
+            .map(row => this.getEntity("branches", row.branchId))
             .filter(branch => !!branch);
     }
 
-    addNoteReordering(parentNoteId, sourceId) {
+    addNoteReordering(parentNoteId, componentId) {
         this.noteReorderings.push(parentNoteId);
     }
 
@@ -50,20 +61,20 @@ export default class LoadResults {
         return this.noteReorderings;
     }
 
-    addAttribute(attributeId, sourceId) {
-        this.attributes.push({attributeId, sourceId});
+    addAttribute(attributeId, componentId) {
+        this.attributes.push({attributeId, componentId});
     }
 
-    /** @return {Attribute[]} */
-    getAttributes(sourceId = 'none') {
+    /** @returns {Attribute[]} */
+    getAttributes(componentId = 'none') {
         return this.attributes
-            .filter(row => row.sourceId !== sourceId)
-            .map(row => this.treeCache.attributes[row.attributeId])
+            .filter(row => row.componentId !== componentId)
+            .map(row => this.getEntity("attributes", row.attributeId))
             .filter(attr => !!attr);
     }
 
-    addNoteRevision(noteRevisionId, noteId, sourceId) {
-        this.noteRevisions.push({noteRevisionId, noteId, sourceId});
+    addNoteRevision(noteRevisionId, noteId, componentId) {
+        this.noteRevisions.push({noteRevisionId, noteId, componentId});
     }
 
     hasNoteRevisionForNote(noteId) {
@@ -71,28 +82,28 @@ export default class LoadResults {
     }
 
     getNoteIds() {
-        return Object.keys(this.noteIdToSourceId);
+        return Object.keys(this.noteIdToComponentId);
     }
 
-    isNoteReloaded(noteId, sourceId = null) {
+    isNoteReloaded(noteId, componentId = null) {
         if (!noteId) {
             return false;
         }
 
-        const sourceIds = this.noteIdToSourceId[noteId];
-        return sourceIds && !!sourceIds.find(sId => sId !== sourceId);
+        const componentIds = this.noteIdToComponentId[noteId];
+        return componentIds && componentIds.find(sId => sId !== componentId) !== undefined;
     }
 
-    addNoteContent(noteId, sourceId) {
-        this.contentNoteIdToSourceId.push({noteId, sourceId});
+    addNoteContent(noteId, componentId) {
+        this.contentNoteIdToComponentId.push({noteId, componentId});
     }
 
-    isNoteContentReloaded(noteId, sourceId) {
+    isNoteContentReloaded(noteId, componentId) {
         if (!noteId) {
             return false;
         }
 
-        return this.contentNoteIdToSourceId.find(l => l.noteId === noteId && l.sourceId !== sourceId);
+        return this.contentNoteIdToComponentId.find(l => l.noteId === noteId && l.componentId !== componentId);
     }
 
     addOption(name) {
@@ -100,7 +111,7 @@ export default class LoadResults {
     }
 
     isOptionReloaded(name) {
-        this.options.includes(name);
+        return this.options.includes(name);
     }
 
     /**
@@ -113,17 +124,17 @@ export default class LoadResults {
     }
 
     isEmpty() {
-        return Object.keys(this.noteIdToSourceId).length === 0
+        return Object.keys(this.noteIdToComponentId).length === 0
             && this.branches.length === 0
             && this.attributes.length === 0
             && this.noteReorderings.length === 0
             && this.noteRevisions.length === 0
-            && this.contentNoteIdToSourceId.length === 0
+            && this.contentNoteIdToComponentId.length === 0
             && this.options.length === 0;
     }
 
     isEmptyForTree() {
-        return Object.keys(this.noteIdToSourceId).length === 0
+        return Object.keys(this.noteIdToComponentId).length === 0
             && this.branches.length === 0
             && this.attributes.length === 0
             && this.noteReorderings.length === 0;

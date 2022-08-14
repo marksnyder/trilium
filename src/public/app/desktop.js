@@ -34,7 +34,9 @@ noteAutocompleteService.init();
 
 if (utils.isElectron()) {
     const electron = utils.dynamicRequire('electron');
-    const {webContents} = electron.remote.getCurrentWindow();
+
+    const remote = utils.dynamicRequire('@electron/remote');
+    const {webContents} = remote.getCurrentWindow();
 
     webContents.on('context-menu', (event, params) => {
         const {editFlags} = params;
@@ -50,13 +52,13 @@ if (utils.isElectron()) {
                     title: suggestion,
                     command: "replaceMisspelling",
                     spellingSuggestion: suggestion,
-                    uiIcon: "empty"
+                    uiIcon: "bx bx-empty"
                 });
             }
 
             items.push({
                 title: `Add "${params.misspelledWord}" to dictionary`,
-                uiIcon: "plus",
+                uiIcon: "bx bx-plus",
                 handler: () => webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
             });
 
@@ -67,7 +69,7 @@ if (utils.isElectron()) {
             items.push({
                 enabled: editFlags.canCut && hasText,
                 title: `Cut <kbd>${platformModifier}+X`,
-                uiIcon: "cut",
+                uiIcon: "bx bx-cut",
                 handler: () => webContents.cut()
             });
         }
@@ -76,7 +78,7 @@ if (utils.isElectron()) {
             items.push({
                 enabled: editFlags.canCopy && hasText,
                 title: `Copy <kbd>${platformModifier}+C`,
-                uiIcon: "copy",
+                uiIcon: "bx bx-copy",
                 handler: () => webContents.copy()
             });
         }
@@ -84,7 +86,7 @@ if (utils.isElectron()) {
         if (!["", "javascript:", "about:blank#blocked"].includes(params.linkURL) && params.mediaType === 'none') {
             items.push({
                 title: `Copy link`,
-                uiIcon: "copy",
+                uiIcon: "bx bx-copy",
                 handler: () => {
                     electron.clipboard.write({
                         bookmark: params.linkText,
@@ -98,7 +100,7 @@ if (utils.isElectron()) {
             items.push({
                 enabled: editFlags.canPaste,
                 title: `Paste <kbd>${platformModifier}+V`,
-                uiIcon: "paste",
+                uiIcon: "bx bx-paste",
                 handler: () => webContents.paste()
             });
         }
@@ -107,7 +109,7 @@ if (utils.isElectron()) {
             items.push({
                 enabled: editFlags.canPaste,
                 title: `Paste as plain text <kbd>${platformModifier}+Shift+V`,
-                uiIcon: "paste",
+                uiIcon: "bx bx-paste",
                 handler: () => webContents.pasteAndMatchStyle()
             });
         }
@@ -120,7 +122,7 @@ if (utils.isElectron()) {
             items.push({
                 enabled: editFlags.canPaste,
                 title: `Search for "${shortenedSelection}" with DuckDuckGo`,
-                uiIcon: "search-alt",
+                uiIcon: "bx bx-search-alt",
                 handler: () => electron.shell.openExternal(`https://duckduckgo.com/?q=${encodeURIComponent(params.selectionText)}`)
             });
         }

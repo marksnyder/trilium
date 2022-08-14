@@ -1,12 +1,12 @@
 const syncService = require('./sync');
 const log = require('./log');
 const sqlInit = require('./sql_init');
-const repository = require('./repository');
 const optionService = require('./options');
 const syncOptions = require('./sync_options');
 const request = require('./request');
 const appInfo = require('./app_info');
 const utils = require('./utils');
+const becca = require("../becca/becca");
 
 async function hasSyncServerSchemaAndSeed() {
     const response = await requestToSyncServer('GET', '/api/setup/status');
@@ -55,7 +55,7 @@ async function requestToSyncServer(method, path, body = null) {
     }), timeout);
 }
 
-async function setupSyncFromSyncServer(syncServerHost, syncProxy, username, password) {
+async function setupSyncFromSyncServer(syncServerHost, syncProxy, password) {
     if (sqlInit.isDbInitialized()) {
         return {
             result: 'failure',
@@ -70,10 +70,7 @@ async function setupSyncFromSyncServer(syncServerHost, syncProxy, username, pass
         const resp = await request.exec({
             method: 'get',
             url: syncServerHost + '/api/setup/sync-seed',
-            auth: {
-                username,
-                password
-            },
+            auth: { password },
             proxy: syncProxy,
             timeout: 30000 // seed request should not take long
         });
@@ -107,8 +104,8 @@ async function setupSyncFromSyncServer(syncServerHost, syncProxy, username, pass
 
 function getSyncSeedOptions() {
     return [
-        repository.getOption('documentId'),
-        repository.getOption('documentSecret')
+        becca.getOption('documentId'),
+        becca.getOption('documentSecret')
     ];
 }
 

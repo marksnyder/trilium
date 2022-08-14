@@ -1,6 +1,6 @@
 "use strict";
 
-const repository = require('./repository');
+const becca = require('../becca/becca');
 const log = require('./log');
 const protectedSessionService = require('./protected_session');
 const noteService = require('./notes');
@@ -9,15 +9,16 @@ const sql = require('./sql');
 const jimp = require('jimp');
 const imageType = require('image-type');
 const sanitizeFilename = require('sanitize-filename');
-const noteRevisionService = require('./note_revisions.js');
+const noteRevisionService = require('./note_revisions');
 const isSvg = require('is-svg');
 const isAnimated = require('is-animated');
+const htmlSanitizer = require("./html_sanitizer");
 
 async function processImage(uploadBuffer, originalName, shrinkImageSwitch) {
+    const compressImages = optionService.getOptionBool("compressImages");
     const origImageFormat = getImageType(uploadBuffer);
 
-    if (origImageFormat && ["webp", "svg", "gif"].includes(origImageFormat.ext)) {
-        // JIMP does not support webp at the moment: https://github.com/oliver-moran/jimp/issues/144
+    if (!origImageFormat || !["jpg", "png"].includes(origImageFormat.ext)) {
         shrinkImageSwitch = false;
     }
     else if (isAnimated(uploadBuffer)) {
@@ -25,9 +26,18 @@ async function processImage(uploadBuffer, originalName, shrinkImageSwitch) {
         shrinkImageSwitch = false;
     }
 
-    const finalImageBuffer = shrinkImageSwitch ? await shrinkImage(uploadBuffer, originalName) : uploadBuffer;
+    let finalImageBuffer;
+    let imageFormat;
 
-    const imageFormat = getImageType(finalImageBuffer);
+    if (compressImages && shrinkImageSwitch) {
+        finalImageBuffer = await shrinkImage(uploadBuffer, originalName);
+        imageFormat = getImageType(finalImageBuffer);
+    } else {
+        finalImageBuffer = uploadBuffer;
+        imageFormat = origImageFormat || {
+            ext: 'dat'
+        };
+    }
 
     return {
         buffer: finalImageBuffer,
@@ -42,7 +52,9 @@ function getImageType(buffer) {
         }
     }
     else {
-        return imageType(buffer) || "jpg"; // optimistic JPG default
+        return imageType(buffer) || {
+            ext: "jpg"
+        }; // optimistic JPG default
     }
 }
 
@@ -55,10 +67,11 @@ function getImageMimeFromExtension(ext) {
 function updateImage(noteId, uploadBuffer, originalName) {
     log.info(`Updating image ${noteId}: ${originalName}`);
 
-    const note = repository.getNote(noteId);
+    originalName = htmlSanitizer.sanitize(originalName);
 
-    noteRevisionService.createNoteRevision(note);
-    noteRevisionService.protectNoteRevisions(note);
+    const note = becca.getNote(noteId);
+
+    note.saveNoteRevision();
 
     note.setLabel('originalFileName', originalName);
 
@@ -73,12 +86,16 @@ function updateImage(noteId, uploadBuffer, originalName) {
     });
 }
 
-function saveImage(parentNoteId, uploadBuffer, originalName, shrinkImageSwitch) {
-    log.info(`Saving image ${originalName}`);
+function saveImage(parentNoteId, uploadBuffer, originalName, shrinkImageSwitch, trimFilename = false) {
+    log.info(`Saving image ${originalName} into parent ${parentNoteId}`);
+
+    if (trimFilename && originalName.length > 40) {
+        // https://github.com/zadam/trilium/issues/2307
+        originalName = "image";
+    }
 
     const fileName = sanitizeFilename(originalName);
-
-    const parentNote = repository.getNote(parentNoteId);
+    const parentNote = becca.getNote(parentNoteId);
 
     const {note} = noteService.createNewNote({
         parentNoteId,
@@ -95,6 +112,14 @@ function saveImage(parentNoteId, uploadBuffer, originalName, shrinkImageSwitch) 
     processImage(uploadBuffer, originalName, shrinkImageSwitch).then(({buffer, imageFormat}) => {
         sql.transactional(() => {
             note.mime = getImageMimeFromExtension(imageFormat.ext);
+
+            if (!originalName.includes(".")) {
+                originalName += "." + imageFormat.ext;
+
+                note.setLabel('originalFileName', originalName);
+                note.title = sanitizeFilename(originalName);
+            }
+
             note.save();
 
             note.setContent(buffer);
@@ -110,7 +135,11 @@ function saveImage(parentNoteId, uploadBuffer, originalName, shrinkImageSwitch) 
 }
 
 async function shrinkImage(buffer, originalName) {
-    const jpegQuality = optionService.getOptionInt('imageJpegQuality');
+    let jpegQuality = optionService.getOptionInt('imageJpegQuality');
+
+    if (jpegQuality < 10 || jpegQuality > 100) {
+        jpegQuality = 75;
+    }
 
     let finalImageBuffer;
     try {

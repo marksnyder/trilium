@@ -1,7 +1,6 @@
 "use strict";
 
 const html = require('html');
-const repository = require('../repository');
 const dateUtils = require('../date_utils');
 const path = require('path');
 const mimeTypes = require('mime-types');
@@ -11,8 +10,10 @@ const utils = require('../utils');
 const protectedSessionService = require('../protected_session');
 const sanitize = require("sanitize-filename");
 const fs = require("fs");
+const becca = require("../../becca/becca");
 const RESOURCE_DIR = require('../../services/resource_dir').RESOURCE_DIR;
 const archiver = require('archiver');
+const log = require("../log");
 
 /**
  * @param {TaskContext} taskContext
@@ -50,8 +51,14 @@ function exportToZip(taskContext, branch, format, res) {
     }
 
     function getDataFileName(note, baseFileName, existingFileNames) {
-        const existingExtension = path.extname(baseFileName).toLowerCase();
+        let fileName = baseFileName;
+
+        let existingExtension = path.extname(fileName).toLowerCase();
         let newExtension;
+
+        if (fileName.length > 30) {
+            fileName = fileName.substr(0, 30);
+        }
 
         // following two are handled specifically since we always want to have these extensions no matter the automatic detection
         // and/or existing detected extensions in the note name
@@ -68,16 +75,15 @@ function exportToZip(taskContext, branch, format, res) {
             newExtension = null;
         }
         else {
-            newExtension = mimeTypes.extension(note.mime) || "dat";
+            if (note.mime?.toLowerCase()?.trim() === "image/jpg") {
+                newExtension = 'jpg';
+            }
+            else {
+                newExtension = mimeTypes.extension(note.mime) || "dat";
+            }
         }
 
-        let fileName = baseFileName;
-
-        if (fileName.length > 30) {
-            fileName = fileName.substr(0, 30);
-        }
-
-        // if the note is already named with extension (e.g. "jquery.js"), then it's silly to append exact same extension again
+        // if the note is already named with extension (e.g. "jquery"), then it's silly to append exact same extension again
         if (newExtension && existingExtension !== "." + newExtension.toLowerCase()) {
             fileName += "." + newExtension;
         }
@@ -92,7 +98,8 @@ function exportToZip(taskContext, branch, format, res) {
             return;
         }
 
-        const completeTitle = branch.prefix ? (branch.prefix + ' - ' + note.title) : note.title;
+        const title = note.getTitleOrProtected();
+        const completeTitle = branch.prefix ? (branch.prefix + ' - ' + title) : title;
         let baseFileName = sanitize(completeTitle);
 
         if (baseFileName.length > 200) { // actual limit is 256 bytes(!) but let's be conservative
@@ -108,7 +115,7 @@ function exportToZip(taskContext, branch, format, res) {
                 isClone: true,
                 noteId: note.noteId,
                 notePath: notePath,
-                title: note.title,
+                title: note.getTitleOrProtected(),
                 prefix: branch.prefix,
                 dataFileName: fileName,
                 type: 'text', // export will have text description,
@@ -120,7 +127,7 @@ function exportToZip(taskContext, branch, format, res) {
             isClone: false,
             noteId: note.noteId,
             notePath: notePath,
-            title: note.title,
+            title: note.getTitleOrProtected(),
             notePosition: branch.notePosition,
             prefix: branch.prefix,
             isExpanded: branch.isExpanded,
@@ -144,7 +151,8 @@ function exportToZip(taskContext, branch, format, res) {
 
         noteIdToMeta[note.noteId] = meta;
 
-        const childBranches = note.getChildBranches();
+        const childBranches = note.getChildBranches()
+            .filter(branch => branch.noteId !== 'hidden');
 
         const available = !note.isProtected || protectedSessionService.isProtectedSessionAvailable();
 
@@ -247,7 +255,9 @@ ${content}
 </html>`;
             }
 
-            return html.prettyPrint(content, {indent_size: 2});
+            return content.length < 100000
+                ? html.prettyPrint(content, {indent_size: 2})
+                : content;
         }
         else if (noteMeta.format === 'markdown') {
             let markdownContent = mdService.toMarkdown(content);
@@ -267,6 +277,8 @@ ${content}
     const notePaths = {};
 
     function saveNote(noteMeta, filePathPrefix) {
+        log.info(`Exporting note ${noteMeta.noteId}`);
+
         if (noteMeta.isClone) {
             const targetUrl = getTargetUrl(noteMeta.noteId, noteMeta);
 
@@ -279,7 +291,7 @@ ${content}
             return;
         }
 
-        const note = repository.getNote(noteMeta.noteId);
+        const note = becca.getNote(noteMeta.noteId);
 
         notePaths[note.noteId] = filePathPrefix + (noteMeta.dataFileName || noteMeta.dirFileName);
 
@@ -440,7 +452,7 @@ ${content}
     }
 
     const note = branch.getNote();
-    const zipFileName = (branch.prefix ? `${branch.prefix} - ` : "") + note.title + ".zip";
+    const zipFileName = (branch.prefix ? `${branch.prefix} - ` : "") + note.getTitleOrProtected() + ".zip";
 
     res.setHeader('Content-Disposition', utils.getContentDisposition(zipFileName));
     res.setHeader('Content-Type', 'application/zip');

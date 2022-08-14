@@ -1,6 +1,6 @@
 import treeService from "./tree.js";
 import linkService from "./link.js";
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 import utils from "./utils.js";
 import attributeRenderer from "./attribute_renderer.js";
 import noteContentRenderer from "./note_content_renderer.js";
@@ -22,8 +22,7 @@ async function mouseEnterHandler() {
     const $link = $(this);
 
     if ($link.hasClass("no-tooltip-preview")
-        || $link.hasClass("disabled")
-        || $link.attr("data-action") === 'note-revision') {
+        || $link.hasClass("disabled")) {
         return;
     }
 
@@ -44,7 +43,7 @@ async function mouseEnterHandler() {
 
     const noteId = treeService.getNoteIdFromNotePath(notePath);
 
-    const note = await treeCache.getNote(noteId);
+    const note = await froca.getNote(noteId);
     const content = await renderTooltip(note);
 
     if (utils.isHtmlEmpty(content)) {
@@ -60,7 +59,9 @@ async function mouseEnterHandler() {
         $(this).tooltip({
             delay: {"show": 300, "hide": 100},
             container: 'body',
-            placement: 'auto',
+            // https://github.com/zadam/trilium/issues/2794 https://github.com/zadam/trilium/issues/2988
+            // with bottom this flickering happens a bit less
+            placement: 'bottom',
             trigger: 'manual',
             boundary: 'window',
             title: html,

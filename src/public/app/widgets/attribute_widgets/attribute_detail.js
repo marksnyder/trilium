@@ -1,11 +1,11 @@
 import server from "../../services/server.js";
-import treeCache from "../../services/tree_cache.js";
+import froca from "../../services/froca.js";
 import treeService from "../../services/tree.js";
 import linkService from "../../services/link.js";
 import attributeAutocompleteService from "../../services/attribute_autocomplete.js";
 import noteAutocompleteService from "../../services/note_autocomplete.js";
 import promotedAttributeDefinitionParser from '../../services/promoted_attribute_definition_parser.js';
-import TabAwareWidget from "../tab_aware_widget.js";
+import NoteContextAwareWidget from "../note_context_aware_widget.js";
 import SpacedUpdate from "../../services/spaced_update.js";
 import utils from "../../services/utils.js";
 
@@ -189,6 +189,7 @@ const ATTR_HELP = {
         "runAtHour": "On which hour should this run. Should be used together with <code>#run=hourly</code>. Can be defined multiple times for more runs during the day.",
         "disableInclusion": "scripts with this label won't be included into parent script execution.",
         "sorted": "keeps child notes sorted by title alphabetically",
+        "top": "keep given note on top in its parent (applies only on sorted parents)",
         "hidePromotedAttributes": "Hide promoted attributes on this note",
         "readOnly": "editor is in read only mode. Works only for text and code notes.",
         "autoReadOnlyDisabled": "text/code notes can be set automatically into read mode when they are too large. You can disable this behavior on per-note basis by adding this label to the note",
@@ -203,26 +204,55 @@ const ATTR_HELP = {
         "workspace": "marks this note as a workspace which allows easy hoisting",
         "workspaceIconClass": "defines box icon CSS class which will be used in tab when hoisted to this note",
         "workspaceTabBackgroundColor": "CSS color used in the note tab when hoisted to this note",
+        "workspaceCalendarRoot": "Defines per-workspace calendar root",
         "searchHome": "new search notes will be created as children of this note",
         "hoistedSearchHome": "new search notes will be created as children of this note when hoisted to some ancestor of this note",
         "inbox": "default inbox location for new notes",
         "hoistedInbox": "default inbox location for new notes when hoisted to some ancestor of this note",
         "sqlConsoleHome": "default location of SQL console notes",
+        "bookmarked": "note with this label will appear in bookmarks",
+        "bookmarkFolder": "note with this label will appear in bookmarks as folder (allowing access to its children)",
+        "shareHiddenFromTree": "this note is hidden from left navigation tree, but still accessible with its URL",
+        "shareAlias": "define an alias using which the note will be available under https://your_trilium_host/share/[your_alias]",
+        "shareOmitDefaultCss": "default share page CSS will be omitted. Use when you make extensive styling changes.",
+        "shareRoot": "marks note which is served on /share root.",
+        "shareRaw": "note will be served in its raw format, without HTML wrapper",
+        "shareDisallowRobotIndexing": `will forbid robot indexing of this note via <code>X-Robots-Tag: noindex</code> header`,
+        "shareCredentials": "require credentials to access this shared note. Value is expected to be in format 'username:password'. Don't forget to make this inheritable to apply to child-notes/images.",
+        "displayRelations": "comma delimited names of relations which should be displayed. All other ones will be hidden.",
+        "hideRelations": "comma delimited names of relations which should be hidden. All other ones will be displayed.",
+        "titleTemplate": `default title of notes created as children of this note. The value is evaluated as JavaScript string 
+                        and thus can be enriched with dynamic content via the injected <code>now</code> and <code>parentNote</code> variables. Examples:
+                        
+                        <ul>
+                            <li><code>\${parentNote.getLabelValue('authorName')}'s literary works</code></li>
+                            <li><code>Log for \${now.format('YYYY-MM-DD HH:mm:ss')}</code></li>
+                        </ul>
+                        
+                        See <a href="https://github.com/zadam/trilium/wiki/Default-note-title">wiki with details</a>, API docs for <a href="https://zadam.github.io/trilium/backend_api/Note.html">parentNote</a> and <a href="https://day.js.org/docs/en/display/format">now</a> for details.`,
+        "template": "This note will appear in the selection of available template when creating new note",
+        "toc": "<code>#toc</code> or <code>#toc=show</code> will force the Table of Contents to be shown, <code>#toc=hide</code> will force hiding it. If the label doesn't exist, the global setting is observed"
     },
     "relation": {
         "runOnNoteCreation": "executes when note is created on backend",
         "runOnNoteTitleChange": "executes when note title is changed (includes note creation as well)",
         "runOnNoteChange": "executes when note is changed (includes note creation as well)",
+        "runOnNoteDeletion": "executes when note is being deleted",
+        "runOnBranchCreation": "executes when a branch is created. Branch is a link between parent note and child note and is created e.g. when cloning or moving note.",
+        "runOnBranchDeletion": "executes when a branch is deleted. Branch is a link between parent note and child note and is deleted e.g. when moving note (old branch/link is deleted).",
         "runOnChildNoteCreation": "executes when new note is created under this note",
         "runOnAttributeCreation": "executes when new attribute is created under this note",
         "runOnAttributeChange": "executes when attribute is changed under this note",
         "template": "attached note's attributes will be inherited even without parent-child relationship. See template for details.",
         "renderNote": 'notes of type "render HTML note" will be rendered using a code note (HTML or script) and it is necessary to point using this relation to which note should be rendered',
-        "widget": "target of this relation will be executed and rendered as a widget in the sidebar"
+        "widget": "target of this relation will be executed and rendered as a widget in the sidebar",
+        "shareCss": "CSS note which will be injected into the share page. CSS note must be in the shared sub-tree as well. Consider using 'shareHiddenFromTree' and 'shareOmitDefaultCss' as well.",
+        "shareJs": "JavaScript note which will be injected into the share page. JS note must be in the shared sub-tree as well. Consider using 'shareHiddenFromTree'.",
+        "shareFavicon": "Favicon note to be set in the shared page. Typically you want to set it to share root and make it inheritable. Favicon note must be in the shared sub-tree as well. Consider using 'shareHiddenFromTree'.",
     }
 };
 
-export default class AttributeDetailWidget extends TabAwareWidget {
+export default class AttributeDetailWidget extends NoteContextAwareWidget {
     async refresh() {
         // switching note/tab should close the widget
 
@@ -237,7 +267,6 @@ export default class AttributeDetailWidget extends TabAwareWidget {
         utils.bindElShortcut(this.$widget, 'ctrl+return', () => this.saveAndClose());
         utils.bindElShortcut(this.$widget, 'esc', () => this.cancelAndClose());
 
-        this.contentSized();
 
         this.$title = this.$widget.find('.attr-detail-title');
 
@@ -335,7 +364,7 @@ export default class AttributeDetailWidget extends TabAwareWidget {
         this.$relatedNotesList = this.$relatedNotesContainer.find('.related-notes-list');
         this.$relatedNotesMoreNotes = this.$relatedNotesContainer.find('.related-notes-more-notes');
 
-        $(window).on('mouseup', e => {
+        $(window).on('mousedown', e => {
             if (!$(e.target).closest(this.$widget[0]).length
                 && !$(e.target).closest(".algolia-autocomplete").length
                 && !$(e.target).closest("#context-menu-container").length) {
@@ -429,7 +458,7 @@ export default class AttributeDetailWidget extends TabAwareWidget {
                 .setSelectedNotePath("");
 
             if (attribute.value) {
-                const targetNote = await treeCache.getNote(attribute.value);
+                const targetNote = await froca.getNote(attribute.value);
 
                 if (targetNote) {
                     this.$inputTargetNote
@@ -542,7 +571,7 @@ export default class AttributeDetailWidget extends TabAwareWidget {
             this.$relatedNotesList.empty();
 
             const displayedResults = results.length <= DISPLAYED_NOTES ? results : results.slice(0, DISPLAYED_NOTES);
-            const displayedNotes = await treeCache.getNotes(displayedResults.map(res => res.noteId));
+            const displayedNotes = await froca.getNotes(displayedResults.map(res => res.noteId));
 
             for (const note of displayedNotes) {
                 const notePath = treeService.getSomeNotePath(note);
@@ -627,7 +656,9 @@ export default class AttributeDetailWidget extends TabAwareWidget {
                 props.push('precision=' + this.$inputNumberPrecision.val());
             }
         } else if (this.attrType === 'relation-definition' && this.$inputInverseRelation.val().trim().length > 0) {
-            props.push("inverse=" + this.$inputInverseRelation.val());
+            const inverseRelationName = this.$inputInverseRelation.val();
+
+            props.push("inverse=" + utils.filterAttributeName(inverseRelationName));
         }
 
         this.$rowNumberPrecision.toggle(

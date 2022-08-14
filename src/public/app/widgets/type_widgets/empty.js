@@ -2,7 +2,6 @@ import noteAutocompleteService from '../../services/note_autocomplete.js';
 import TypeWidget from "./type_widget.js";
 import appContext from "../../services/app_context.js";
 import searchService from "../../services/search.js";
-import linkService from "../../services/link.js";
 
 const TPL = `
 <div class="note-detail-empty note-detail-printable">
@@ -50,7 +49,6 @@ export default class EmptyTypeWidget extends TypeWidget {
         // FIXME: this might be optimized - cleaned up after use since it's always used only for new tab
 
         this.$widget = $(TPL);
-        this.contentSized();
         this.$autoComplete = this.$widget.find(".note-autocomplete");
 
         noteAutocompleteService.initNoteAutocomplete(this.$autoComplete, {
@@ -62,12 +60,14 @@ export default class EmptyTypeWidget extends TypeWidget {
                     return false;
                 }
 
-                appContext.tabManager.getActiveTabContext().setNote(suggestion.notePath);
+                appContext.tabManager.getActiveContext().setNote(suggestion.notePath);
             });
 
         noteAutocompleteService.showRecentNotes(this.$autoComplete);
 
         this.$workspaceNotes = this.$widget.find('.workspace-notes');
+
+        super.doRender();
     }
 
     async doRefresh(note) {
@@ -79,10 +79,16 @@ export default class EmptyTypeWidget extends TypeWidget {
             this.$workspaceNotes.append(
                 $('<div class="workspace-note">')
                     .append($("<div>").addClass(workspaceNote.getIcon() + " workspace-icon"))
-                    .append($("<div>").append(workspaceNote.title))
+                    .append($("<div>").text(workspaceNote.title))
                     .attr("title", "Enter workspace " + workspaceNote.title)
                     .on('click', () => this.triggerCommand('hoistNote', {noteId: workspaceNote.noteId}))
             );
+        }
+
+        if (workspaceNotes.length === 0) {
+            this.$autoComplete
+                .trigger('focus')
+                .trigger('select');
         }
     }
 }

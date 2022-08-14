@@ -1,6 +1,5 @@
 const backupService = require('./backup');
 const sql = require('./sql');
-const optionService = require('./options');
 const fs = require('fs-extra');
 const log = require('./log');
 const utils = require('./utils');
@@ -32,7 +31,14 @@ async function migrate() {
     // backup before attempting migration
     await backupService.backupNow("before-migration");
 
-    const currentDbVersion = parseInt(optionService.getOption('dbVersion'));
+    const currentDbVersion = getDbVersion();
+
+    if (currentDbVersion < 183) {
+        log.error("Direct migration from your current version is not supported. Please upgrade to the latest v0.47.X first and only then to this version.");
+
+        utils.crash();
+        return;
+    }
 
     fs.readdirSync(resourceDir.MIGRATIONS_DIR).forEach(file => {
         const match = file.match(/([0-9]{4})__([a-zA-Z0-9_ ]+)\.(sql|js)/);
@@ -62,15 +68,8 @@ async function migrate() {
         try {
             log.info("Attempting migration to version " + mig.dbVersion);
 
-            if (mig.name === 'VACUUM') {
-                // special case since VACUUM can't be executed in a transaction
-                sql.execute('VACUUM');
-            }
-            else {
-                executeMigration(mig);
-            }
+            executeMigration(mig);
 
-            // not using repository because of changed utcDateModified column in migration 129
             sql.execute(`UPDATE options SET value = ? WHERE name = ?`, [mig.dbVersion.toString(), "dbVersion"]);
 
             log.info("Migration to version " + mig.dbVersion + " has been successful.");
@@ -103,7 +102,7 @@ function isDbUpToDate() {
 async function migrateIfNecessary() {
     const currentDbVersion = getDbVersion();
 
-    if (currentDbVersion > appInfo.dbVersion) {
+    if (currentDbVersion > appInfo.dbVersion && process.env.TRILIUM_IGNORE_DB_VERSION !== 'true') {
         log.error(`Current DB version ${currentDbVersion} is newer than app db version ${appInfo.dbVersion} which means that it was created by newer and incompatible version of Trilium. Upgrade to latest version of Trilium to resolve this issue.`);
 
         utils.crash();

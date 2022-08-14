@@ -9,7 +9,6 @@ const noteService = require('../services/notes');
 const attributeService = require('../services/attributes');
 const cls = require('../services/cls');
 const cloningService = require('../services/cloning');
-const repository = require('../services/repository');
 const noteRevisionService = require('../services/note_revisions');
 const loremIpsum = require('lorem-ipsum').loremIpsum;
 
@@ -62,7 +61,7 @@ async function start() {
             const parentNoteId = getRandomNoteId();
             const prefix = Math.random() > 0.8 ? "prefix" : null;
 
-            const result = await cloningService.cloneNoteToParent(noteIdToClone, parentNoteId, prefix);
+            const result = await cloningService.cloneNoteToBranch(noteIdToClone, parentNoteId, prefix);
 
             console.log(`Cloning ${i}:`, result.success ? "succeeded" : "FAILED");
         }
@@ -84,7 +83,7 @@ async function start() {
             isInheritable: Math.random() > 0.1 // 10% are inheritable
         });
 
-        noteRevisionService.createNoteRevision(await repository.getNote(getRandomNoteId()));
+        noteRevisionService.createNoteRevision(await becca.getNote(getRandomNoteId()));
 
         notes.push(note.noteId);
     }

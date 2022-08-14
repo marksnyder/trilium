@@ -3,7 +3,7 @@ import appContext from "./app_context.js";
 import utils from './utils.js';
 import noteCreateService from './note_create.js';
 import treeService from './tree.js';
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 
 // this key needs to have this value so it's hit by the tooltip
 const SELECTED_NOTE_PATH_KEY = "data-note-path";
@@ -31,7 +31,7 @@ async function autocompleteSourceForCKEditor(queryText) {
 }
 
 async function autocompleteSource(term, cb, options = {}) {
-    const activeNoteId = appContext.tabManager.getActiveTabNoteId();
+    const activeNoteId = appContext.tabManager.getActiveContextNoteId();
 
     let results = await server.get('autocomplete'
             + '?query=' + encodeURIComponent(term)
@@ -43,7 +43,7 @@ async function autocompleteSource(term, cb, options = {}) {
                 action: 'create-note',
                 noteTitle: term,
                 parentNoteId: activeNoteId || 'root',
-                highlightedNotePathTitle: `Create and link child note "${term}"`
+                highlightedNotePathTitle: `Create and link child note "${utils.escapeHtml(term)}"`
             }
         ].concat(results);
     }
@@ -53,7 +53,7 @@ async function autocompleteSource(term, cb, options = {}) {
             {
                 action: 'external-link',
                 externalLink: term,
-                highlightedNotePathTitle: `Insert external link to "${term}"`
+                highlightedNotePathTitle: `Insert external link to "${utils.escapeHtml(term)}"`
             }
         ].concat(results);
     }
@@ -140,7 +140,9 @@ function initNoteAutocomplete($el, options) {
         appendTo: document.querySelector('body'),
         hint: false,
         autoselect: true,
-        openOnFocus: true,
+        // openOnFocus has to be false, otherwise re-focus (after return from note type chooser dialog) forces
+        // re-querying of the autocomplete source which then changes currently selected suggestion
+        openOnFocus: false,
         minLength: 0,
         tabAutocomplete: false
     }, [
@@ -170,9 +172,17 @@ function initNoteAutocomplete($el, options) {
         }
 
         if (suggestion.action === 'create-note') {
+            const {success, noteType, templateNoteId} = await noteCreateService.chooseNoteType();
+
+            if (!success) {
+                return;
+            }
+
             const {note} = await noteCreateService.createNote(suggestion.parentNoteId, {
                 title: suggestion.noteTitle,
-                activate: false
+                activate: false,
+                type: noteType,
+                templateNoteId: templateNoteId
             });
 
             suggestion.notePath = treeService.getSomeNotePath(note);
@@ -252,7 +262,7 @@ function init() {
     }
 
     $.fn.setNote = async function (noteId) {
-        const note = noteId ? await treeCache.getNote(noteId, true) : null;
+        const note = noteId ? await froca.getNote(noteId, true) : null;
 
         $(this)
             .val(note ? note.title : "")
@@ -261,7 +271,6 @@ function init() {
 }
 
 export default {
-    autocompleteSource,
     autocompleteSourceForCKEditor,
     initNoteAutocomplete,
     showRecentNotes,

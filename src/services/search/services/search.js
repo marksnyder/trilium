@@ -1,23 +1,23 @@
 "use strict";
 
-const lex = require('./lex.js');
-const handleParens = require('./handle_parens.js');
-const parse = require('./parse.js');
-const NoteSet = require("../note_set.js");
-const SearchResult = require("../search_result.js");
-const SearchContext = require("../search_context.js");
-const noteCache = require('../../note_cache/note_cache.js');
-const noteCacheService = require('../../note_cache/note_cache_service.js');
-const utils = require('../../utils.js');
-const log = require('../../log.js');
+const normalizeString = require("normalize-strings");
+const lex = require('./lex');
+const handleParens = require('./handle_parens');
+const parse = require('./parse');
+const SearchResult = require("../search_result");
+const SearchContext = require("../search_context");
+const becca = require('../../../becca/becca');
+const beccaService = require('../../../becca/becca_service');
+const utils = require('../../utils');
+const log = require('../../log');
 
 function loadNeededInfoFromDatabase() {
-    const sql = require('../../sql.js');
+    const sql = require('../../sql');
 
-    for (const noteId in noteCache.notes) {
-        noteCache.notes[noteId].contentSize = 0;
-        noteCache.notes[noteId].noteSize = 0;
-        noteCache.notes[noteId].revisionCount = 0;
+    for (const noteId in becca.notes) {
+        becca.notes[noteId].contentSize = 0;
+        becca.notes[noteId].noteSize = 0;
+        becca.notes[noteId].revisionCount = 0;
     }
 
     const noteContentLengths = sql.getRows(`
@@ -29,13 +29,13 @@ function loadNeededInfoFromDatabase() {
         WHERE notes.isDeleted = 0`);
 
     for (const {noteId, length} of noteContentLengths) {
-        if (!(noteId in noteCache.notes)) {
-            log.error(`Note ${noteId} not found in note cache.`);
+        if (!(noteId in becca.notes)) {
+            log.error(`Note ${noteId} not found in becca.`);
             continue;
         }
 
-        noteCache.notes[noteId].contentSize = length;
-        noteCache.notes[noteId].noteSize = length;
+        becca.notes[noteId].contentSize = length;
+        becca.notes[noteId].noteSize = length;
     }
 
     const noteRevisionContentLengths = sql.getRows(`
@@ -48,13 +48,13 @@ function loadNeededInfoFromDatabase() {
         WHERE notes.isDeleted = 0`);
 
     for (const {noteId, length} of noteRevisionContentLengths) {
-        if (!(noteId in noteCache.notes)) {
-            log.error(`Note ${noteId} not found in note cache.`);
+        if (!(noteId in becca.notes)) {
+            log.error(`Note ${noteId} not found in becca.`);
             continue;
         }
 
-        noteCache.notes[noteId].noteSize += length;
-        noteCache.notes[noteId].revisionCount++;
+        becca.notes[noteId].noteSize += length;
+        becca.notes[noteId].revisionCount++;
     }
 }
 
@@ -63,18 +63,12 @@ function loadNeededInfoFromDatabase() {
  * @param {SearchContext} searchContext
  * @return {SearchResult[]}
  */
-function findNotesWithExpression(expression, searchContext) {
-    let allNotes = Object.values(noteCache.notes);
-
+function findResultsWithExpression(expression, searchContext) {
     if (searchContext.dbLoadNeeded) {
         loadNeededInfoFromDatabase();
     }
 
-    // in the process of loading data sometimes we create "skeleton" note instances which are expected to be filled later
-    // in case of inconsistent data this might not work and search will then crash on these
-    allNotes = allNotes.filter(note => note.type !== undefined);
-
-    const allNoteSet = new NoteSet(allNotes);
+    const allNoteSet = becca.getAllNoteSet();
 
     const executionContext = {
         noteIdToNotePath: {}
@@ -83,9 +77,24 @@ function findNotesWithExpression(expression, searchContext) {
     const noteSet = expression.execute(allNoteSet, executionContext);
 
     const searchResults = noteSet.notes
-        .map(note => new SearchResult(
-            executionContext.noteIdToNotePath[note.noteId] || noteCacheService.getSomePath(note)
-        ));
+        .map(note => {
+            if (note.isDeleted) {
+                return null;
+            }
+
+            const notePathArray = executionContext.noteIdToNotePath[note.noteId] || beccaService.getSomePath(note);
+
+            if (!notePathArray) {
+                throw new Error(`Can't find note path for note ${JSON.stringify(note.getPojo())}`);
+            }
+
+            if (notePathArray.includes("hidden")) {
+                return null;
+            }
+
+            return new SearchResult(notePathArray);
+        })
+        .filter(note => !!note);
 
     for (const res of searchResults) {
         res.computeScore(searchContext.highlightedTokens);
@@ -124,9 +133,13 @@ function parseQueryToExpression(query, searchContext) {
     });
 
     if (searchContext.debug) {
-        log.info(`Fulltext tokens: ` + JSON.stringify(fulltextTokens));
-        log.info(`Expression tokens: ` + JSON.stringify(structuredExpressionTokens, null, 4));
-        log.info("Expression tree: " + JSON.stringify(expression, null, 4));
+        searchContext.debugInfo = {
+            fulltextTokens,
+            structuredExpressionTokens,
+            expression
+        };
+
+        log.info("Search debug: " + JSON.stringify(searchContext.debugInfo, null, 4));
     }
 
     return expression;
@@ -134,10 +147,20 @@ function parseQueryToExpression(query, searchContext) {
 
 /**
  * @param {string} query
+ * @return {Note[]}
+ */
+function searchNotes(query, params = {}) {
+    const searchResults = findResultsWithQuery(query, new SearchContext(params));
+
+    return searchResults.map(sr => becca.notes[sr.noteId]);
+}
+
+/**
+ * @param {string} query
  * @param {SearchContext} searchContext
  * @return {SearchResult[]}
  */
-function findNotesWithQuery(query, searchContext) {
+function findResultsWithQuery(query, searchContext) {
     query = query || "";
     searchContext.originalQuery = query;
 
@@ -147,17 +170,18 @@ function findNotesWithQuery(query, searchContext) {
         return [];
     }
 
-    return findNotesWithExpression(expression, searchContext);
+    return findResultsWithExpression(expression, searchContext);
 }
 
-function searchTrimmedNotes(query, searchContext) {
-    const allSearchResults = findNotesWithQuery(query, searchContext);
-    const trimmedSearchResults = allSearchResults.slice(0, 200);
+/**
+ * @param {string} query
+ * @param {SearchContext} searchContext
+ * @return {Note|null}
+ */
+function findFirstNoteWithQuery(query, searchContext) {
+    const searchResults = findResultsWithQuery(query, searchContext);
 
-    return {
-        count: allSearchResults.length,
-        results: trimmedSearchResults
-    };
+    return searchResults.length > 0 ? becca.notes[searchResults[0].noteId] : null;
 }
 
 function searchNotesForAutocomplete(query) {
@@ -167,14 +191,16 @@ function searchNotesForAutocomplete(query) {
         fuzzyAttributeSearch: true
     });
 
-    const {results} = searchTrimmedNotes(query, searchContext);
+    const allSearchResults = findResultsWithQuery(query, searchContext);
 
-    highlightSearchResults(results, searchContext.highlightedTokens);
+    const trimmed = allSearchResults.slice(0, 200);
 
-    return results.map(result => {
+    highlightSearchResults(trimmed, searchContext.highlightedTokens);
+
+    return trimmed.map(result => {
         return {
             notePath: result.notePath,
-            noteTitle: noteCacheService.getNoteTitle(result.noteId),
+            noteTitle: beccaService.getNoteTitle(result.noteId),
             notePathTitle: result.notePathTitle,
             highlightedNotePathTitle: result.highlightedNotePathTitle
         }
@@ -194,7 +220,7 @@ function highlightSearchResults(searchResults, highlightedTokens) {
     highlightedTokens.sort((a, b) => a.length > b.length ? -1 : 1);
 
     for (const result of searchResults) {
-        const note = noteCache.notes[result.noteId];
+        const note = becca.notes[result.noteId];
 
         result.highlightedNotePathTitle = result.notePathTitle.replace('/[<\{\}]/g', '');
 
@@ -206,20 +232,32 @@ function highlightSearchResults(searchResults, highlightedTokens) {
             result.highlightedNotePathTitle += ` "mime: ${note.mime}'`;
         }
 
-        for (const attr of note.attributes) {
-            if (highlightedTokens.find(token => attr.name.toLowerCase().includes(token)
-                || attr.value.toLowerCase().includes(token))) {
+        for (const attr of note.getAttributes()) {
+            if (highlightedTokens.find(token => utils.normalize(attr.name).includes(token)
+                || utils.normalize(attr.value).includes(token))) {
 
                 result.highlightedNotePathTitle += ` "${formatAttribute(attr)}'`;
             }
         }
     }
 
-    for (const token of highlightedTokens) {
-        const tokenRegex = new RegExp("(" + utils.escapeRegExp(token) + ")", "gi");
+    function wrapText(text, start, length, prefix, suffix) {
+        return text.substring(0, start) + prefix + text.substr(start, length) + suffix + text.substring(start + length);
+    }
 
+    for (const token of highlightedTokens) {
         for (const result of searchResults) {
-            result.highlightedNotePathTitle = result.highlightedNotePathTitle.replace(tokenRegex, "{$1}");
+            // Reset token
+            const tokenRegex = new RegExp(utils.escapeRegExp(token), "gi");
+            let match;
+
+            // Find all matches
+            while ((match = tokenRegex.exec(normalizeString(result.highlightedNotePathTitle))) !== null) {
+                result.highlightedNotePathTitle = wrapText(result.highlightedNotePathTitle, match.index, token.length, "{", "}");
+
+                // 2 characters are added, so we need to adjust the index
+                tokenRegex.lastIndex += 2;
+            }
         }
     }
 
@@ -250,7 +288,8 @@ function formatAttribute(attr) {
 }
 
 module.exports = {
-    searchTrimmedNotes,
     searchNotesForAutocomplete,
-    findNotesWithQuery
+    findResultsWithQuery,
+    findFirstNoteWithQuery,
+    searchNotes
 };

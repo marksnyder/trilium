@@ -3,15 +3,17 @@ const CKEDITOR = {"js": ["libraries/ckeditor/ckeditor.js"]};
 const CODE_MIRROR = {
     js: [
         "libraries/codemirror/codemirror.js",
-        "libraries/codemirror/addon/mode/loadmode.js",
-        "libraries/codemirror/addon/mode/simple.js",
-        "libraries/codemirror/addon/fold/xml-fold.js",
+        "libraries/codemirror/addon/display/placeholder.js",
         "libraries/codemirror/addon/edit/matchbrackets.js",
         "libraries/codemirror/addon/edit/matchtags.js",
+        "libraries/codemirror/addon/fold/xml-fold.js",
+        "libraries/codemirror/addon/lint/lint.js",
+        "libraries/codemirror/addon/lint/eslint.js",
+        "libraries/codemirror/addon/mode/loadmode.js",
+        "libraries/codemirror/addon/mode/simple.js",
         "libraries/codemirror/addon/search/match-highlighter.js",
         "libraries/codemirror/mode/meta.js",
-        "libraries/codemirror/addon/lint/lint.js",
-        "libraries/codemirror/addon/lint/eslint.js"
+        "libraries/codemirror/keymap/vim.js"
     ],
     css: [
         "libraries/codemirror/codemirror.css",
@@ -33,17 +35,6 @@ const RELATION_MAP = {
     ]
 };
 
-const LINK_MAP = {
-    js: [
-        "libraries/jsplumb.js",
-        "libraries/panzoom.js",
-        "libraries/springy.js"
-    ],
-    css: [
-        "stylesheets/link_map.css"
-    ]
-};
-
 const PRINT_THIS = {js: ["libraries/printThis.js"]};
 
 const CALENDAR_WIDGET = {css: ["stylesheets/calendar.css"]};
@@ -55,6 +46,28 @@ const KATEX = {
 
 const WHEEL_ZOOM = {
     js: [ "libraries/wheel-zoom.min.js"]
+};
+
+const FORCE_GRAPH = {
+    js: [ "libraries/force-graph.min.js"]
+};
+
+const MERMAID = {
+    js: [ "libraries/mermaid.min.js" ]
+}
+
+const EXCALIDRAW = {
+    js: [
+        "node_modules/react/umd/react.production.min.js",
+        "node_modules/react-dom/umd/react-dom.production.min.js",
+        "node_modules/@excalidraw/excalidraw/dist/excalidraw.production.min.js",
+    ]
+};
+
+const MARKJS = {
+    js: [
+        "libraries/jquery.mark.es6.min.js"
+    ]
 };
 
 async function requireLibrary(library) {
@@ -102,9 +115,12 @@ export default {
     ESLINT,
     COMMONMARK,
     RELATION_MAP,
-    LINK_MAP,
     PRINT_THIS,
     CALENDAR_WIDGET,
     KATEX,
-    WHEEL_ZOOM
+    WHEEL_ZOOM,
+    FORCE_GRAPH,
+    MERMAID,
+    EXCALIDRAW,
+    MARKJS
 }

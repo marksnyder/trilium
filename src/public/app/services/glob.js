@@ -3,8 +3,7 @@ import appContext from "./app_context.js";
 import server from "./server.js";
 import libraryLoader from "./library_loader.js";
 import ws from "./ws.js";
-import protectedSessionHolder from "./protected_session_holder.js";
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 
 function setupGlobs() {
     window.glob.PROFILING_LOG = false;
@@ -16,18 +15,15 @@ function setupGlobs() {
     window.glob.getHeaders = server.getHeaders;
 
     // required for ESLint plugin and CKEditor
-    window.glob.getActiveTabNote = () => appContext.tabManager.getActiveTabNote();
+    window.glob.getActiveTabNote = () => appContext.tabManager.getActiveContextNote();
     window.glob.requireLibrary = libraryLoader.requireLibrary;
     window.glob.ESLINT = libraryLoader.ESLINT;
     window.glob.appContext = appContext; // for debugging
-    window.glob.treeCache = treeCache;
+    window.glob.froca = froca;
+    window.glob.treeCache = froca; // compatibility for CKEditor builds for a while
 
     // for CKEditor integration (button on block toolbar)
-    window.glob.importMarkdownInline = async () => {
-        const dialog = await import("../dialogs/markdown_import.js");
-
-        dialog.importMarkdownInline();
-    };
+    window.glob.importMarkdownInline = async () => appContext.triggerCommand("importMarkdownInline");
 
     window.glob.SEARCH_HELP_TEXT = `
     <strong>Search tips</strong> - also see <button class="btn btn-sm" type="button" data-help-page="Search">complete help on search</button>

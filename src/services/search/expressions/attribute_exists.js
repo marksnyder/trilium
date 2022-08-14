@@ -1,7 +1,7 @@
 "use strict";
 
 const NoteSet = require('../note_set');
-const noteCache = require('../../note_cache/note_cache');
+const becca = require('../../../becca/becca');
 const Expression = require('./expression');
 
 class AttributeExistsExp extends Expression {
@@ -15,28 +15,28 @@ class AttributeExistsExp extends Expression {
 
     execute(inputNoteSet) {
         const attrs = this.prefixMatch
-            ? noteCache.findAttributesWithPrefix(this.attributeType, this.attributeName)
-            : noteCache.findAttributes(this.attributeType, this.attributeName);
+            ? becca.findAttributesWithPrefix(this.attributeType, this.attributeName)
+            : becca.findAttributes(this.attributeType, this.attributeName);
 
         const resultNoteSet = new NoteSet();
 
         for (const attr of attrs) {
             const note = attr.note;
 
-            if (inputNoteSet.hasNoteId(note.noteId)) {
-                if (attr.isInheritable) {
-                    resultNoteSet.addAll(note.subtreeNotesIncludingTemplated);
-                }
-                else if (note.isTemplate) {
-                    resultNoteSet.addAll(note.templatedNotes);
-                }
-                else {
-                    resultNoteSet.add(note);
-                }
+            if (attr.isInheritable) {
+                resultNoteSet.addAll(note.getSubtreeNotesIncludingTemplated());
+            }
+            else if (note.isTemplate() &&
+                // template attr is used as a marker for templates, but it's not meant to be inherited
+                !(this.attributeType === 'label' && this.attributeName === 'template')) {
+                resultNoteSet.addAll(note.getTemplatedNotes());
+            }
+            else {
+                resultNoteSet.add(note);
             }
         }
 
-        return resultNoteSet;
+        return resultNoteSet.intersection(inputNoteSet);
     }
 }
 

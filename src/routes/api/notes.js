@@ -2,39 +2,40 @@
 
 const noteService = require('../../services/notes');
 const treeService = require('../../services/tree');
-const repository = require('../../services/repository');
 const sql = require('../../services/sql');
 const utils = require('../../services/utils');
 const log = require('../../services/log');
 const TaskContext = require('../../services/task_context');
 const fs = require('fs');
-const noteRevisionService = require("../../services/note_revisions.js");
+const becca = require("../../becca/becca");
 
 function getNote(req) {
     const noteId = req.params.noteId;
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
         return [404, "Note " + noteId + " has not been found."];
     }
 
-    if (note.isStringNote()) {
-        note.content = note.getContent();
+    const pojo = note.getPojo();
 
-        if (note.type === 'file' && note.content.length > 10000) {
-            note.content = note.content.substr(0, 10000)
-                + `\r\n\r\n... and ${note.content.length - 10000} more characters.`;
+    if (note.isStringNote()) {
+        pojo.content = note.getContent();
+
+        if (note.type === 'file' && pojo.content.length > 10000) {
+            pojo.content = pojo.content.substr(0, 10000)
+                + `\r\n\r\n... and ${pojo.content.length - 10000} more characters.`;
         }
     }
 
     const contentMetadata = note.getContentMetadata();
 
-    note.contentLength = contentMetadata.contentLength;
+    pojo.contentLength = contentMetadata.contentLength;
 
-    note.combinedUtcDateModified = note.utcDateModified > contentMetadata.utcDateModified ? note.utcDateModified : contentMetadata.utcDateModified;
-    note.combinedDateModified = note.utcDateModified > contentMetadata.utcDateModified ? note.dateModified : contentMetadata.dateModified;
+    pojo.combinedUtcDateModified = note.utcDateModified > contentMetadata.utcDateModified ? note.utcDateModified : contentMetadata.utcDateModified;
+    pojo.combinedDateModified = note.utcDateModified > contentMetadata.utcDateModified ? note.dateModified : contentMetadata.dateModified;
 
-    return note;
+    return pojo;
 }
 
 function createNote(req) {
@@ -51,27 +52,30 @@ function createNote(req) {
     };
 }
 
-function updateNote(req) {
-    const note = req.body;
-    const noteId = req.params.noteId;
+function updateNoteContent(req) {
+    const {content} = req.body;
+    const {noteId} = req.params;
 
-    return noteService.updateNote(noteId, note);
+    return noteService.updateNoteContent(noteId, content);
 }
 
 function deleteNote(req) {
     const noteId = req.params.noteId;
     const taskId = req.query.taskId;
+    const eraseNotes = req.query.eraseNotes === 'true';
     const last = req.query.last === 'true';
 
     // note how deleteId is separate from taskId - single taskId produces separate deleteId for each "top level" deleted note
     const deleteId = utils.randomString(10);
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     const taskContext = TaskContext.getInstance(taskId, 'delete-notes');
 
-    for (const branch of note.getBranches()) {
-        noteService.deleteBranch(branch, deleteId, taskContext);
+    note.deleteNote(deleteId, taskContext);
+
+    if (eraseNotes) {
+        noteService.eraseNotesWithDeleteId(deleteId);
     }
 
     if (last) {
@@ -80,34 +84,27 @@ function deleteNote(req) {
 }
 
 function undeleteNote(req) {
-    const note = repository.getNote(req.params.noteId);
-
     const taskContext = TaskContext.getInstance(utils.randomString(10), 'undeleteNotes');
 
-    noteService.undeleteNote(note, note.deleteId, taskContext);
+    noteService.undeleteNote(req.params.noteId, taskContext);
 
     taskContext.taskSucceeded();
 }
 
 function sortChildNotes(req) {
     const noteId = req.params.noteId;
-    const {sortBy, sortDirection} = req.body;
+    const {sortBy, sortDirection, foldersFirst} = req.body;
 
-    log.info(`Sorting ${noteId} children with ${sortBy} ${sortDirection}`);
+    log.info(`Sorting '${noteId}' children with ${sortBy} ${sortDirection}, foldersFirst=${foldersFirst}`);
 
     const reverse = sortDirection === 'desc';
 
-    if (sortBy === 'title') {
-        treeService.sortNotesByTitle(noteId, false, reverse);
-    }
-    else {
-        treeService.sortNotes(noteId, sortBy, reverse);
-    }
+    treeService.sortNotes(noteId, sortBy, reverse, foldersFirst);
 }
 
 function protectNote(req) {
     const noteId = req.params.noteId;
-    const note = repository.getNote(noteId);
+    const note = becca.notes[noteId];
     const protect = !!parseInt(req.params.isProtected);
     const includingSubTree = !!parseInt(req.query.subtree);
 
@@ -120,11 +117,10 @@ function protectNote(req) {
 
 function setNoteTypeMime(req) {
     // can't use [] destructuring because req.params is not iterable
-    const noteId = req.params[0];
-    const type = req.params[1];
-    const mime = req.params[2];
+    const {noteId} = req.params;
+    const {type, mime} = req.body;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
     note.type = type;
     note.mime = mime;
     note.save();
@@ -149,23 +145,29 @@ function getRelationMap(req) {
 
     const questionMarks = noteIds.map(noteId => '?').join(',');
 
-    const relationMapNote = repository.getNote(relationMapNoteId);
+    const relationMapNote = becca.getNote(relationMapNoteId);
 
     const displayRelationsVal = relationMapNote.getLabelValue('displayRelations');
     const displayRelations = !displayRelationsVal ? [] : displayRelationsVal
         .split(",")
         .map(token => token.trim());
 
-    console.log("displayRelations", displayRelations);
+    const hideRelationsVal = relationMapNote.getLabelValue('hideRelations');
+    const hideRelations = !hideRelationsVal ? [] : hideRelationsVal
+        .split(",")
+        .map(token => token.trim());
 
-    const notes = repository.getEntities(`SELECT * FROM notes WHERE isDeleted = 0 AND noteId IN (${questionMarks})`, noteIds);
+    const foundNoteIds = sql.getColumn(`SELECT noteId FROM notes WHERE isDeleted = 0 AND noteId IN (${questionMarks})`, noteIds);
+    const notes = becca.getNotes(foundNoteIds);
 
     for (const note of notes) {
         resp.noteTitles[note.noteId] = note.title;
 
         resp.relations = resp.relations.concat(note.getRelations()
             .filter(relation => !relation.isAutoLink() || displayRelations.includes(relation.name))
-            .filter(relation => displayRelations.length === 0 || displayRelations.includes(relation.name))
+            .filter(relation => displayRelations.length > 0
+                ? displayRelations.includes(relation.name)
+                : !hideRelations.includes(relation.name))
             .filter(relation => noteIds.includes(relation.value))
             .map(relation => ({
                 attributeId: relation.attributeId,
@@ -190,17 +192,21 @@ function changeTitle(req) {
     const noteId = req.params.noteId;
     const title = req.body.title;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
-        return [404, `Note ${noteId} has not been found`];
+        return [404, `Note '${noteId}' has not been found`];
     }
 
-    if (!note.isContentAvailable) {
-        return [400, `Note ${noteId} is not available for change`];
+    if (!note.isContentAvailable()) {
+        return [400, `Note '${noteId}' is not available for change`];
     }
 
     const noteTitleChanged = note.title !== title;
+
+    if (noteTitleChanged) {
+        noteService.saveNoteRevisionIfNeeded(note);
+    }
 
     note.title = title;
 
@@ -235,7 +241,7 @@ function getDeleteNotesPreview(req) {
 
         const note = branch.getNote();
 
-        if (deleteAllClones || note.getBranches().length <= branchCountToDelete[branch.branchId]) {
+        if (deleteAllClones || note.getParentBranches().length <= branchCountToDelete[branch.branchId]) {
             noteIdsToBeDeleted.add(note.noteId);
 
             for (const childBranch of note.getChildBranches()) {
@@ -245,7 +251,7 @@ function getDeleteNotesPreview(req) {
     }
 
     for (const branchId of branchIdsToDelete) {
-        const branch = repository.getBranch(branchId);
+        const branch = becca.getBranch(branchId);
 
         if (!branch) {
             log.error(`Branch ${branchId} was not found and delete preview can't be calculated for this note.`);
@@ -279,15 +285,15 @@ function uploadModifiedFile(req) {
     const noteId = req.params.noteId;
     const {filePath} = req.body;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
-        return [404, `Note ${noteId} has not been found`];
+        return [404, `Note '${noteId}' has not been found`];
     }
 
-    log.info(`Updating note ${noteId} with content from ${filePath}`);
+    log.info(`Updating note '${noteId}' with content from ${filePath}`);
 
-    noteRevisionService.createNoteRevision(note);
+    note.saveNoteRevision();
 
     const fileContent = fs.readFileSync(filePath);
 
@@ -298,9 +304,24 @@ function uploadModifiedFile(req) {
     note.setContent(fileContent);
 }
 
+function getBacklinkCount(req) {
+    const {noteId} = req.params;
+
+    const note = becca.getNote(noteId);
+
+    if (!note) {
+        return [404, "Not found"];
+    }
+    else {
+        return {
+            count: note.getTargetRelations().length
+        };
+    }
+}
+
 module.exports = {
     getNote,
-    updateNote,
+    updateNoteContent,
     deleteNote,
     undeleteNote,
     createNote,
@@ -312,5 +333,6 @@ module.exports = {
     duplicateSubtree,
     eraseDeletedNotesNow,
     getDeleteNotesPreview,
-    uploadModifiedFile
+    uploadModifiedFile,
+    getBacklinkCount
 };

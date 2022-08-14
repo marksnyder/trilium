@@ -1,9 +1,14 @@
-import TabAwareWidget from "./tab_aware_widget.js";
-import utils from "../services/utils.js";
+import NoteContextAwareWidget from "./note_context_aware_widget.js";
 import protectedSessionHolder from "../services/protected_session_holder.js";
 import SpacedUpdate from "../services/spaced_update.js";
 import server from "../services/server.js";
 import libraryLoader from "../services/library_loader.js";
+import appContext from "../services/app_context.js";
+import keyboardActionsService from "../services/keyboard_actions.js";
+import noteCreateService from "../services/note_create.js";
+import attributeService from "../services/attributes.js";
+import attributeRenderer from "../services/attribute_renderer.js";
+
 import EmptyTypeWidget from "./type_widgets/empty.js";
 import EditableTextTypeWidget from "./type_widgets/editable_text.js";
 import EditableCodeTypeWidget from "./type_widgets/editable_code.js";
@@ -11,15 +16,15 @@ import FileTypeWidget from "./type_widgets/file.js";
 import ImageTypeWidget from "./type_widgets/image.js";
 import RenderTypeWidget from "./type_widgets/render.js";
 import RelationMapTypeWidget from "./type_widgets/relation_map.js";
+import CanvasTypeWidget from "./type_widgets/canvas.js";
 import ProtectedSessionTypeWidget from "./type_widgets/protected_session.js";
 import BookTypeWidget from "./type_widgets/book.js";
-import appContext from "../services/app_context.js";
-import keyboardActionsService from "../services/keyboard_actions.js";
-import noteCreateService from "../services/note_create.js";
 import DeletedTypeWidget from "./type_widgets/deleted.js";
 import ReadOnlyTextTypeWidget from "./type_widgets/read_only_text.js";
 import ReadOnlyCodeTypeWidget from "./type_widgets/read_only_code.js";
 import NoneTypeWidget from "./type_widgets/none.js";
+import NoteMapTypeWidget from "./type_widgets/note_map.js";
+import WebViewTypeWidget from "./type_widgets/web_view.js";
 
 const TPL = `
 <div class="note-detail">
@@ -27,6 +32,10 @@ const TPL = `
     .note-detail {
         font-family: var(--detail-font-family);
         font-size: var(--detail-font-size);
+    }
+    
+    .note-detail.full-height {
+        height: 100%;
     }
     </style>
 </div>
@@ -44,26 +53,33 @@ const typeWidgetClasses = {
     'search': NoneTypeWidget,
     'render': RenderTypeWidget,
     'relation-map': RelationMapTypeWidget,
+    'canvas': CanvasTypeWidget,
     'protected-session': ProtectedSessionTypeWidget,
-    'book': BookTypeWidget
+    'book': BookTypeWidget,
+    'note-map': NoteMapTypeWidget,
+    'web-view': WebViewTypeWidget
 };
 
-export default class NoteDetailWidget extends TabAwareWidget {
+export default class NoteDetailWidget extends NoteContextAwareWidget {
     constructor() {
         super();
 
         this.typeWidgets = {};
 
         this.spacedUpdate = new SpacedUpdate(async () => {
-            const {note} = this.tabContext;
+            const {note} = this.noteContext;
             const {noteId} = note;
 
-            const dto = note.dto;
-            dto.content = this.getTypeWidget().getContent();
+            const content = await this.getTypeWidget().getContent();
+
+            // for read only notes
+            if (content === undefined) {
+                return;
+            }
 
             protectedSessionHolder.touchProtectedSessionIfNecessary(note);
 
-            await server.put('notes/' + noteId, dto, this.componentId);
+            await server.put(`notes/${noteId}/content`, {content}, this.componentId);
         });
 
         appContext.addBeforeUnloadListener(this);
@@ -82,7 +98,7 @@ export default class NoteDetailWidget extends TabAwareWidget {
         this.$widget.on("dragleave", e => e.preventDefault());
 
         this.$widget.on("drop", async e => {
-            const activeNote = appContext.tabManager.getActiveTabNote();
+            const activeNote = appContext.tabManager.getActiveContextNote();
 
             if (!activeNote) {
                 return;
@@ -119,16 +135,29 @@ export default class NoteDetailWidget extends TabAwareWidget {
 
             this.$widget.append($renderedWidget);
 
-            await typeWidget.handleEvent('setTabContext', {tabContext: this.tabContext});
+            await typeWidget.handleEvent('setNoteContext', {noteContext: this.noteContext});
 
-            // this is happening in update() so note has been already set and we need to reflect this
-            await typeWidget.handleEvent('tabNoteSwitched', {
-                tabContext: this.tabContext,
-                notePath: this.tabContext.notePath
+            // this is happening in update() so note has been already set, and we need to reflect this
+            await typeWidget.handleEvent('noteSwitched', {
+                noteContext: this.noteContext,
+                notePath: this.noteContext.notePath
             });
 
             this.child(typeWidget);
         }
+
+        this.checkFullHeight();
+    }
+
+    /**
+     * sets full height of container that contains note content for a subset of note-types
+     */
+    checkFullHeight() {
+        // https://github.com/zadam/trilium/issues/2522
+        this.$widget.toggleClass("full-height",
+            !this.noteContext.hasNoteList()
+            && ['editable-text', 'editable-code', 'canvas', 'web-view', 'note-map'].includes(this.type)
+            && this.mime !== 'text/x-sqlite;schema=trilium');
     }
 
     getTypeWidget() {
@@ -150,33 +179,19 @@ export default class NoteDetailWidget extends TabAwareWidget {
 
         let type = note.type;
 
-        if (type === 'text' && !this.tabContext.textPreviewDisabled) {
-            const noteComplement = await this.tabContext.getNoteComplement();
-
-            if (note.hasLabel('readOnly') ||
-                (noteComplement.content
-                    && noteComplement.content.length > 10000)
-                    && !note.hasLabel('autoReadOnlyDisabled')) {
-                type = 'read-only-text';
-            }
+        if (type === 'text' && await this.noteContext.isReadOnly()) {
+            type = 'read-only-text';
         }
 
-        if (type === 'code' && !this.tabContext.codePreviewDisabled) {
-            const noteComplement = await this.tabContext.getNoteComplement();
-
-            if (note.hasLabel('readOnly') ||
-                (noteComplement.content
-                    && noteComplement.content.length > 30000)
-                    && !note.hasLabel('autoReadOnlyDisabled')) {
-                type = 'read-only-code';
-            }
+        if ((type === 'code' || type === 'mermaid') && await this.noteContext.isReadOnly()) {
+            type = 'read-only-code';
         }
 
         if (type === 'text') {
             type = 'editable-text';
         }
 
-        if (type === 'code') {
+        if (type === 'code' || type === 'mermaid') {
             type = 'editable-code';
         }
 
@@ -187,36 +202,46 @@ export default class NoteDetailWidget extends TabAwareWidget {
         return type;
     }
 
-    async focusOnDetailEvent({tabId}) {
-        if (this.tabContext.tabId === tabId) {
+    async focusOnDetailEvent({ntxId}) {
+        if (this.noteContext.ntxId === ntxId) {
             await this.refresh();
 
             const widget = this.getTypeWidget();
+            await widget.initialized;
             widget.focus();
         }
     }
 
-    async beforeNoteSwitchEvent({tabContext}) {
-        if (this.isTab(tabContext.tabId)) {
+    async beforeNoteSwitchEvent({noteContext}) {
+        if (this.isNoteContext(noteContext.ntxId)) {
             await this.spacedUpdate.updateNowIfNecessary();
         }
     }
 
-    async beforeTabRemoveEvent({tabId}) {
-        if (this.isTab(tabId)) {
+    async beforeNoteContextRemoveEvent({ntxIds}) {
+        if (this.isNoteContext(ntxIds)) {
             await this.spacedUpdate.updateNowIfNecessary();
         }
     }
 
     async printActiveNoteEvent() {
-        if (!this.tabContext.isActive()) {
+        if (!this.noteContext.isActive()) {
             return;
         }
 
         await libraryLoader.requireLibrary(libraryLoader.PRINT_THIS);
 
+        let $promotedAttributes = $("");
+
+        if (this.note.getPromotedDefinitionAttributes().length > 0) {
+            $promotedAttributes = (await attributeRenderer.renderNormalAttributes(this.note)).$renderedAttributes;
+        }
+
         this.$widget.find('.note-detail-printable:visible').printThis({
-            header: $("<h2>").text(this.note && this.note.title).prop('outerHTML'),
+            header: $("<div>")
+                        .append($("<h2>").text(this.note.title))
+                        .append($promotedAttributes)
+                        .prop('outerHTML'),
             footer: `
 <script src="libraries/katex/katex.min.js"></script>
 <script src="libraries/katex/mhchem.min.js"></script>
@@ -235,14 +260,14 @@ export default class NoteDetailWidget extends TabAwareWidget {
                 "libraries/katex/katex.min.css",
                 "stylesheets/print.css",
                 "stylesheets/relation_map.css",
-                "stylesheets/themes.css"
+                "stylesheets/ckeditor-theme.css"
             ],
             debug: true
         });
     }
 
-    hoistedNoteChangedEvent({tabId}) {
-        if (this.isTab(tabId)) {
+    hoistedNoteChangedEvent({ntxId}) {
+        if (this.isNoteContext(ntxId)) {
             this.refresh();
         }
     }
@@ -258,13 +283,13 @@ export default class NoteDetailWidget extends TabAwareWidget {
 
             const label = attrs.find(attr =>
                 attr.type === 'label'
-                && ['readOnly', 'autoReadOnlyDisabled', 'cssClass', 'displayRelations'].includes(attr.name)
-                && attr.isAffecting(this.note));
+                && ['readOnly', 'autoReadOnlyDisabled', 'cssClass', 'displayRelations', 'hideRelations'].includes(attr.name)
+                && attributeService.isAffecting(attr, this.note));
 
             const relation = attrs.find(attr =>
                 attr.type === 'relation'
                 && ['template', 'renderNote'].includes(attr.name)
-                && attr.isAffecting(this.note));
+                && attributeService.isAffecting(attr, this.note));
 
             if (label || relation) {
                 // probably incorrect event
@@ -278,29 +303,34 @@ export default class NoteDetailWidget extends TabAwareWidget {
         return this.spacedUpdate.isAllSavedAndTriggerUpdate();
     }
 
-    textPreviewDisabledEvent({tabContext}) {
-        if (this.isTab(tabContext.tabId)) {
+    readOnlyTemporarilyDisabledEvent({noteContext}) {
+        if (this.isNoteContext(noteContext.ntxId)) {
             this.refresh();
         }
     }
 
-    codePreviewDisabledEvent({tabContext}) {
-        if (this.isTab(tabContext.tabId)) {
-            this.refresh();
+    async executeInActiveNoteDetailWidgetEvent({callback}) {
+        if (!this.isActiveNoteContext()) {
+            return;
         }
+
+        await this.initialized;
+
+        callback(this);
     }
 
     async cutIntoNoteCommand() {
-        const note = appContext.tabManager.getActiveTabNote();
+        const note = appContext.tabManager.getActiveContextNote();
 
         if (!note) {
             return;
         }
 
         // without await as this otherwise causes deadlock through component mutex
-        noteCreateService.createNote(appContext.tabManager.getActiveTabNotePath(), {
+        noteCreateService.createNote(appContext.tabManager.getActiveContextNotePath(), {
             isProtected: note.isProtected,
-            saveSelection: true
+            saveSelection: true,
+            textEditor: await this.noteContext.getTextEditor()
         });
     }
 
@@ -310,8 +340,20 @@ export default class NoteDetailWidget extends TabAwareWidget {
     }
 
     renderActiveNoteEvent() {
-        if (this.tabContext.isActive()) {
+        if (this.noteContext.isActive()) {
             this.refresh();
         }
+    }
+
+    async executeWithTypeWidgetEvent({resolve, ntxId}) {
+        if (!this.isNoteContext(ntxId)) {
+            return;
+        }
+
+        await this.initialized;
+
+        await this.getWidgetType();
+
+        resolve(this.getTypeWidget());
     }
 }

@@ -1,26 +1,26 @@
 "use strict";
 
 const dayjs = require("dayjs");
-const AndExp = require('../expressions/and.js');
-const OrExp = require('../expressions/or.js');
-const NotExp = require('../expressions/not.js');
-const ChildOfExp = require('../expressions/child_of.js');
-const DescendantOfExp = require('../expressions/descendant_of.js');
-const ParentOfExp = require('../expressions/parent_of.js');
-const RelationWhereExp = require('../expressions/relation_where.js');
-const PropertyComparisonExp = require('../expressions/property_comparison.js');
-const AttributeExistsExp = require('../expressions/attribute_exists.js');
-const LabelComparisonExp = require('../expressions/label_comparison.js');
-const NoteCacheFlatTextExp = require('../expressions/note_cache_flat_text.js');
-const NoteContentProtectedFulltextExp = require('../expressions/note_content_protected_fulltext.js');
-const NoteContentUnprotectedFulltextExp = require('../expressions/note_content_unprotected_fulltext.js');
-const OrderByAndLimitExp = require('../expressions/order_by_and_limit.js');
-const AncestorExp = require("../expressions/ancestor.js");
-const buildComparator = require('./build_comparator.js');
-const ValueExtractor = require('../value_extractor.js');
+const AndExp = require('../expressions/and');
+const OrExp = require('../expressions/or');
+const NotExp = require('../expressions/not');
+const ChildOfExp = require('../expressions/child_of');
+const DescendantOfExp = require('../expressions/descendant_of');
+const ParentOfExp = require('../expressions/parent_of');
+const RelationWhereExp = require('../expressions/relation_where');
+const PropertyComparisonExp = require('../expressions/property_comparison');
+const AttributeExistsExp = require('../expressions/attribute_exists');
+const LabelComparisonExp = require('../expressions/label_comparison');
+const NoteFlatTextExp = require('../expressions/note_flat_text');
+const NoteContentFulltextExp = require('../expressions/note_content_fulltext.js');
+const OrderByAndLimitExp = require('../expressions/order_by_and_limit');
+const AncestorExp = require("../expressions/ancestor");
+const buildComparator = require('./build_comparator');
+const ValueExtractor = require('../value_extractor');
+const utils = require("../../utils");
 
 function getFulltext(tokens, searchContext) {
-    tokens = tokens.map(t => t.token);
+    tokens = tokens.map(t => utils.removeDiacritic(t.token));
 
     searchContext.highlightedTokens.push(...tokens);
 
@@ -30,18 +30,17 @@ function getFulltext(tokens, searchContext) {
 
     if (!searchContext.fastSearch) {
         return new OrExp([
-            new NoteCacheFlatTextExp(tokens),
-            new NoteContentProtectedFulltextExp('*=*', tokens),
-            new NoteContentUnprotectedFulltextExp('*=*', tokens)
+            new NoteFlatTextExp(tokens),
+            new NoteContentFulltextExp('*=*', {tokens, flatText: true})
         ]);
     }
     else {
-        return new NoteCacheFlatTextExp(tokens);
+        return new NoteFlatTextExp(tokens);
     }
 }
 
 function isOperator(str) {
-    return str.match(/^[!=<>*]+$/);
+    return str.match(/^[!=<>*%]+$/);
 }
 
 function getExpression(tokens, searchContext, level = 0) {
@@ -139,10 +138,7 @@ function getExpression(tokens, searchContext, level = 0) {
 
             i++;
 
-            return new OrExp([
-                new NoteContentUnprotectedFulltextExp(operator, [tokens[i].token], raw),
-                new NoteContentProtectedFulltextExp(operator, [tokens[i].token], raw)
-            ]);
+            return new NoteContentFulltextExp(operator, {tokens: [tokens[i].token], raw });
         }
 
         if (tokens[i].token === 'parents') {
@@ -195,8 +191,7 @@ function getExpression(tokens, searchContext, level = 0) {
 
             return new OrExp([
                 new PropertyComparisonExp(searchContext, 'title', '*=*', tokens[i].token),
-                new NoteContentProtectedFulltextExp('*=*', [tokens[i].token]),
-                new NoteContentUnprotectedFulltextExp('*=*', [tokens[i].token])
+                new NoteContentFulltextExp('*=*', {tokens: [tokens[i].token]})
             ]);
         }
 

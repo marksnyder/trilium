@@ -1,92 +1,60 @@
 "use strict";
 
-const repository = require('./repository');
+const searchService = require('./search/services/search');
 const sql = require('./sql');
-const noteCache = require('./note_cache/note_cache');
-const Attribute = require('../entities/attribute');
+const becca = require('../becca/becca');
+const Attribute = require('../becca/entities/attribute');
+const {formatAttrForSearch} = require("./attribute_formatter");
+const BUILTIN_ATTRIBUTES = require("./builtin_attributes");
 
 const ATTRIBUTE_TYPES = [ 'label', 'relation' ];
 
-const BUILTIN_ATTRIBUTES = [
-    // label names
-    { type: 'label', name: 'inbox' },
-    { type: 'label', name: 'disableVersioning' },
-    { type: 'label', name: 'calendarRoot' },
-    { type: 'label', name: 'archived' },
-    { type: 'label', name: 'excludeFromExport' },
-    { type: 'label', name: 'disableInclusion' },
-    { type: 'label', name: 'appCss' },
-    { type: 'label', name: 'appTheme' },
-    { type: 'label', name: 'hidePromotedAttributes' },
-    { type: 'label', name: 'readOnly' },
-    { type: 'label', name: 'autoReadOnlyDisabled' },
-    { type: 'label', name: 'hoistedCssClass' },
-    { type: 'label', name: 'cssClass' },
-    { type: 'label', name: 'iconClass' },
-    { type: 'label', name: 'keyboardShortcut' },
-    { type: 'label', name: 'run', isDangerous: true },
-    { type: 'label', name: 'runOnInstance', isDangerous: false },
-    { type: 'label', name: 'runAtHour', isDangerous: false },
-    { type: 'label', name: 'customRequestHandler', isDangerous: true },
-    { type: 'label', name: 'customResourceProvider', isDangerous: true },
-    { type: 'label', name: 'widget', isDangerous: true },
-    { type: 'label', name: 'noteInfoWidgetDisabled' },
-    { type: 'label', name: 'linkMapWidgetDisabled' },
-    { type: 'label', name: 'noteRevisionsWidgetDisabled' },
-    { type: 'label', name: 'whatLinksHereWidgetDisabled' },
-    { type: 'label', name: 'similarNotesWidgetDisabled' },
-    { type: 'label', name: 'workspace' },
-    { type: 'label', name: 'workspaceIconClass' },
-    { type: 'label', name: 'workspaceTabBackgroundColor' },
-    { type: 'label', name: 'searchHome' },
-    { type: 'label', name: 'hoistedInbox' },
-    { type: 'label', name: 'hoistedSearchHome' },
-    { type: 'label', name: 'sqlConsoleHome' },
-    { type: 'label', name: 'datePattern' },
-    { type: 'label', name: 'pageSize' },
-    { type: 'label', name: 'viewType' },
-
-    // relation names
-    { type: 'relation', name: 'runOnNoteCreation', isDangerous: true },
-    { type: 'relation', name: 'runOnNoteTitleChange', isDangerous: true },
-    { type: 'relation', name: 'runOnNoteChange', isDangerous: true },
-    { type: 'relation', name: 'runOnChildNoteCreation', isDangerous: true },
-    { type: 'relation', name: 'runOnAttributeCreation', isDangerous: true },
-    { type: 'relation', name: 'runOnAttributeChange', isDangerous: true },
-    { type: 'relation', name: 'template' },
-    { type: 'relation', name: 'widget', isDangerous: true },
-    { type: 'relation', name: 'renderNote', isDangerous: true }
-];
-
+/** @returns {Note[]} */
 function getNotesWithLabel(name, value) {
-    let valueCondition = "";
-    let params = [name];
-
-    if (value !== undefined) {
-        valueCondition = " AND attributes.value = ?";
-        params.push(value);
-    }
-
-    return repository.getEntities(`SELECT notes.* FROM notes JOIN attributes USING(noteId) 
-          WHERE notes.isDeleted = 0 AND attributes.isDeleted = 0 AND attributes.name = ? ${valueCondition} ORDER BY position`, params);
+    const query = formatAttrForSearch({type: 'label', name, value}, true);
+    return searchService.searchNotes(query, {
+        includeArchivedNotes: true,
+        ignoreHoistedNote: true
+    });
 }
 
-function getNoteIdsWithLabels(names) {
-    const noteIds = new Set();
+// TODO: should be in search service
+/** @returns {Note|null} */
+function getNoteWithLabel(name, value = undefined) {
+    // optimized version (~20 times faster) without using normal search, useful for e.g. finding date notes
+    const attrs = becca.findAttributes('label', name);
 
-    for (const name of names) {
-        for (const attr of noteCache.findAttributes('label', name)) {
-            noteIds.add(attr.noteId);
+    if (value === undefined) {
+        return attrs[0]?.getNote();
+    }
+
+    value = value?.toLowerCase();
+
+    for (const attr of attrs) {
+        if (attr.value.toLowerCase() === value) {
+            return attr.getNote();
         }
     }
 
-    return Array.from(noteIds);
+    return null;
 }
 
-function getNoteWithLabel(name, value) {
-    const notes = getNotesWithLabel(name, value);
+/**
+ * Does not take into account templates and inheritance
+ */
+function getNotesWithLabelFast(name, value) {
+    // optimized version (~20 times faster) without using normal search, useful for e.g. finding date notes
+    const attrs = becca.findAttributes('label', name);
 
-    return notes.length > 0 ? notes[0] : null;
+    if (value === undefined) {
+        return attrs.map(attr => attr.getNote());
+    }
+
+    value = value?.toLowerCase();
+
+    return attrs
+        .filter(attr => attr.value.toLowerCase() === value)
+        .map(attr => attr.getNote());
 }
 
 function createLabel(noteId, name, value = "") {
@@ -114,7 +82,7 @@ function createAttribute(attribute) {
 function getAttributeNames(type, nameLike) {
     nameLike = nameLike.toLowerCase();
 
-    const names = sql.getColumn(
+    let names = sql.getColumn(
         `SELECT DISTINCT name 
              FROM attributes 
              WHERE isDeleted = 0
@@ -126,6 +94,13 @@ function getAttributeNames(type, nameLike) {
             names.push(attr.name);
         }
     }
+
+    names = names.filter(name => ![
+        'internalLink',
+        'imageLink',
+        'includeNoteLink',
+        'relationMapLink'
+    ].includes(name));
 
     names.sort((a, b) => {
         const aPrefix = a.toLowerCase().startsWith(nameLike);
@@ -153,17 +128,6 @@ function isAttributeDangerous(type, name) {
     );
 }
 
-function getBuiltinAttributeNames() {
-    return BUILTIN_ATTRIBUTES
-        .map(attr => attr.name)
-        .concat([
-            'internalLink',
-            'imageLink',
-            'includeNoteLink',
-            'relationMapLink'
-        ]);
-}
-
 function sanitizeAttributeName(origName) {
     let fixedName;
 
@@ -180,7 +144,7 @@ function sanitizeAttributeName(origName) {
 
 module.exports = {
     getNotesWithLabel,
-    getNoteIdsWithLabels,
+    getNotesWithLabelFast,
     getNoteWithLabel,
     createLabel,
     createRelation,
@@ -188,6 +152,5 @@ module.exports = {
     getAttributeNames,
     isAttributeType,
     isAttributeDangerous,
-    getBuiltinAttributeNames,
     sanitizeAttributeName
 };

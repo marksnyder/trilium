@@ -1,17 +1,17 @@
 "use strict";
 
 const imageService = require('../../services/image');
-const repository = require('../../services/repository');
+const becca = require('../../becca/becca');
 const RESOURCE_DIR = require('../../services/resource_dir').RESOURCE_DIR;
 const fs = require('fs');
 
 function returnImage(req, res) {
-    const image = repository.getNote(req.params.noteId);
+    const image = becca.getNote(req.params.noteId);
 
     if (!image) {
         return res.sendStatus(404);
     }
-    else if (image.type !== 'image') {
+    else if (!["image", "canvas"].includes(image.type)){
         return res.sendStatus(400);
     }
     else if (image.isDeleted || image.data === null) {
@@ -19,26 +19,46 @@ function returnImage(req, res) {
         return res.send(fs.readFileSync(RESOURCE_DIR + '/db/image-deleted.png'));
     }
 
-    res.set('Content-Type', image.mime);
+    /**
+     * special "image" type. the canvas is actually type application/json
+     * to avoid bitrot and enable usage as referenced image the svg is included.
+     */
+    if (image.type === 'canvas') {
+        const content = image.getContent();
+        try {
+            const data = JSON.parse(content);
 
-    res.send(image.getContent());
+            const svg = data.svg || '<svg />'
+            res.set('Content-Type', "image/svg+xml");
+            res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+            res.send(svg);
+        } catch(err) {
+            res.setHeader("Content-Type", "text/plain")
+                .status(500)
+                .send("there was an error parsing excalidraw to svg");
+        }
+    } else {
+        res.set('Content-Type', image.mime);
+        res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.send(image.getContent());
+    }
 }
 
 function uploadImage(req) {
     const {noteId} = req.query;
     const {file} = req;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
         return [404, `Note ${noteId} doesn't exist.`];
     }
 
-    if (!["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"].includes(file.mimetype)) {
+    if (!["image/png", "image/jpg", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"].includes(file.mimetype)) {
         return [400, "Unknown image type: " + file.mimetype];
     }
 
-    const {url} = imageService.saveImage(noteId, file.buffer, file.originalname, true);
+    const {url} = imageService.saveImage(noteId, file.buffer, file.originalname, true, true);
 
     return {
         uploaded: true,
@@ -50,7 +70,7 @@ function updateImage(req) {
     const {noteId} = req.params;
     const {file} = req;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
         return [404, `Note ${noteId} doesn't exist.`];

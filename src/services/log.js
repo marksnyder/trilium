@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const dataDir = require('./data_dir');
+const cls = require('./cls');
 
 if (!fs.existsSync(dataDir.LOG_DIR)) {
     fs.mkdirSync(dataDir.LOG_DIR, 0o700);
@@ -41,13 +42,23 @@ function initLogFile() {
 function checkDate(millisSinceMidnight) {
     if (millisSinceMidnight >= DAY) {
         initLogFile();
+
+        millisSinceMidnight -= DAY;
     }
+
+    return millisSinceMidnight;
 }
 
 function log(str) {
-    const millisSinceMidnight = Date.now() - todaysMidnight.getTime();
+    const bundleNoteId = cls.get("bundleNoteId");
 
-    checkDate(millisSinceMidnight);
+    if (bundleNoteId) {
+        str = `[Script ${bundleNoteId}] ${str}`;
+    }
+
+    let millisSinceMidnight = Date.now() - todaysMidnight.getTime();
+
+    millisSinceMidnight = checkDate(millisSinceMidnight);
 
     logFile.write(formatTime(millisSinceMidnight) + ' ' + str + NEW_LINE);
 
@@ -62,9 +73,9 @@ function error(message) {
     log("ERROR: " + message);
 }
 
-const requestBlacklist = [ "/libraries", "/app", "/images", "/stylesheets" ];
+const requestBlacklist = [ "/libraries", "/app", "/images", "/stylesheets", "/api/recent-notes" ];
 
-function request(req, res, timeMs) {
+function request(req, res, timeMs, responseLength = "?") {
     for (const bl of requestBlacklist) {
         if (req.url.startsWith(bl)) {
             return;
@@ -76,7 +87,7 @@ function request(req, res, timeMs) {
     }
 
     info((timeMs >= 10 ? "Slow " : "") +
-        res.statusCode + " " + req.method + " " + req.url + " took " + timeMs + "ms");
+        `${res.statusCode} ${req.method} ${req.url} with ${responseLength} bytes took ${timeMs}ms`);
 }
 
 function pad(num) {

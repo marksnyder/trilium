@@ -28,8 +28,8 @@ function getHoistedNoteId() {
     return namespace.get('hoistedNoteId') || 'root';
 }
 
-function getSourceId() {
-    return namespace.get('sourceId');
+function getComponentId() {
+    return namespace.get('componentId');
 }
 
 function getLocalNowDateTime() {
@@ -44,44 +44,33 @@ function isEntityEventsDisabled() {
     return !!namespace.get('disableEntityEvents');
 }
 
-function clearEntityChanges() {
-    namespace.set('entityChanges', []);
-}
+function getAndClearEntityChangeIds() {
+    const entityChangeIds = namespace.get('entityChangeIds') || [];
 
-function getAndClearEntityChanges() {
-    const entityChanges = namespace.get('entityChanges') || [];
+    namespace.set('entityChangeIds', []);
 
-    clearEntityChanges();
-
-    return entityChanges;
+    return entityChangeIds;
 }
 
 function addEntityChange(entityChange) {
-    if (namespace.get('ignoreEntityChanges')) {
+    if (namespace.get('ignoreEntityChangeIds')) {
         return;
     }
 
-    const entityChanges = namespace.get('entityChanges') || [];
+    const entityChangeIds = namespace.get('entityChangeIds') || [];
 
-    entityChanges.push(entityChange);
+    // store only ID since the record can be modified (e.g. in erase)
+    entityChangeIds.push(entityChange.id);
 
-    namespace.set('entityChanges', entityChanges);
+    namespace.set('entityChangeIds', entityChangeIds);
 }
 
 function reset() {
     clsHooked.reset();
 }
 
-function getEntityFromCache(entityName, entityId) {
-    return namespace.get(entityName + '-' + entityId);
-}
-
-function setEntityToCache(entityName, entityId, entity) {
-    namespace.set(entityName + '-' + entityId, entity);
-}
-
-function ignoreEntityChanges() {
-    namespace.set('ignoreEntityChanges', true);
+function ignoreEntityChangeIds() {
+    namespace.set('ignoreEntityChangeIds', true);
 }
 
 module.exports = {
@@ -91,15 +80,12 @@ module.exports = {
     set,
     namespace,
     getHoistedNoteId,
-    getSourceId,
+    getComponentId,
     getLocalNowDateTime,
     disableEntityEvents,
     isEntityEventsDisabled,
     reset,
-    clearEntityChanges,
-    getAndClearEntityChanges,
+    getAndClearEntityChangeIds,
     addEntityChange,
-    getEntityFromCache,
-    setEntityToCache,
-    ignoreEntityChanges
+    ignoreEntityChangeIds
 };

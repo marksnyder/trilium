@@ -1,4 +1,8 @@
-function reloadApp() {
+function reloadFrontendApp(reason) {
+    if (reason) {
+        logInfo("Frontend app reload: " + reason);
+    }
+
     window.location.reload(true);
 }
 
@@ -241,10 +245,11 @@ function focusSavedElement() {
     $lastFocusedElement = null;
 }
 
-async function openDialog($dialog) {
-    closeActiveDialog();
-
-    glob.activeDialog = $dialog;
+async function openDialog($dialog, closeActDialog = true) {
+    if (closeActDialog) {
+        closeActiveDialog();
+        glob.activeDialog = $dialog;
+    }
 
     saveFocusedElement();
 
@@ -275,7 +280,7 @@ function isHtmlEmpty(html) {
 
 async function clearBrowserCache() {
     if (isElectron()) {
-        const win = dynamicRequire('electron').remote.getCurrentWindow();
+        const win = dynamicRequire('@electron/remote').getCurrentWindow();
         await win.webContents.session.clearCache();
     }
 }
@@ -285,10 +290,6 @@ function copySelectionToClipboard() {
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text);
     }
-}
-
-function isCKEditorInitialized() {
-    return !!(window && window.cutToNote);
 }
 
 function dynamicRequire(moduleName) {
@@ -336,10 +337,12 @@ function initHelpDropdown($el) {
 
 const wikiBaseUrl = "https://github.com/zadam/trilium/wiki/"
 
+function openHelp(e) {
+    window.open(wikiBaseUrl + $(e.target).attr("data-help-page"), '_blank');
+}
+
 function initHelpButtons($el) {
-    $el.on("click", "*[data-help-page]", e => {
-        window.open(wikiBaseUrl + $(e.target).attr("data-help-page"), '_blank');
-    });
+    $el.on("click", "*[data-help-page]", e => openHelp(e));
 }
 
 function filterAttributeName(name) {
@@ -352,8 +355,18 @@ function isValidAttributeName(name) {
     return ATTR_NAME_MATCHER.test(name);
 }
 
+function sleep(time_ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, time_ms);
+    });
+}
+
+function escapeRegExp(str) {
+    return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+}
+
 export default {
-    reloadApp,
+    reloadFrontendApp,
     parseDate,
     padNum,
     formatTime,
@@ -388,11 +401,13 @@ export default {
     clearBrowserCache,
     normalizeShortcut,
     copySelectionToClipboard,
-    isCKEditorInitialized,
     dynamicRequire,
     timeLimit,
     initHelpDropdown,
     initHelpButtons,
+    openHelp,
     filterAttributeName,
-    isValidAttributeName
+    isValidAttributeName,
+    sleep,
+    escapeRegExp
 };

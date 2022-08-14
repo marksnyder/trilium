@@ -6,7 +6,7 @@ import libraryLoader from "../../services/library_loader.js";
 const TPL = `
 <div class="note-detail-image note-detail-printable">
     <style>
-        .type-image {
+        .type-image .note-detail {
             height: 100%;
         }
     
@@ -18,10 +18,9 @@ const TPL = `
             position: relative;
             display: flex;
             align-items: center;
-            width: 100%;
-            height: 100%;
             overflow: hidden;
             justify-content: center;
+            height: 100%;
         }
         
         .note-detail-image-view {
@@ -43,7 +42,6 @@ class ImageTypeWidget extends TypeWidget {
 
     doRender() {
         this.$widget = $(TPL);
-        this.contentSized();
         this.$imageWrapper = this.$widget.find('.note-detail-image-wrapper');
         this.$imageView = this.$widget.find('.note-detail-image-view')
             .attr("id", "image-view-" + utils.randomString(10));
@@ -51,19 +49,20 @@ class ImageTypeWidget extends TypeWidget {
         libraryLoader.requireLibrary(libraryLoader.WHEEL_ZOOM).then(() => {
             WZoom.create('#' + this.$imageView.attr("id"), {
                 maxScale: 10,
+                speed: 20,
                 zoomOnClick: false
             });
         });
+
+        super.doRender();
     }
 
     async doRefresh(note) {
-        const imageHash = utils.randomString(10);
-
-        this.$imageView.prop("src", `api/images/${note.noteId}/${note.title}?${imageHash}`);
+        this.$imageView.prop("src", `api/images/${note.noteId}/${note.title}`);
     }
 
-    copyImageToClipboardEvent({tabId}) {
-        if (!this.isTab(tabId)) {
+    copyImageToClipboardEvent({ntxId}) {
+        if (!this.isNoteContext(ntxId)) {
             return;
         }
 

@@ -1,7 +1,8 @@
 import branchService from "./branches.js";
 import toastService from "./toast.js";
-import hoistedNoteService from "./hoisted_note.js";
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
+import linkService from "./link.js";
+import utils from "./utils.js";
 
 let clipboardBranchIds = [];
 let clipboardMode = null;
@@ -18,7 +19,7 @@ async function pasteAfter(afterBranchId) {
         clipboardMode = null;
     }
     else if (clipboardMode === 'copy') {
-        const clipboardBranches = clipboardBranchIds.map(branchId => treeCache.getBranch(branchId));
+        const clipboardBranches = clipboardBranchIds.map(branchId => froca.getBranch(branchId));
 
         for (const clipboardBranch of clipboardBranches) {
             const clipboardNote = await clipboardBranch.getNote();
@@ -45,12 +46,12 @@ async function pasteInto(parentBranchId) {
         clipboardMode = null;
     }
     else if (clipboardMode === 'copy') {
-        const clipboardBranches = clipboardBranchIds.map(branchId => treeCache.getBranch(branchId));
+        const clipboardBranches = clipboardBranchIds.map(branchId => froca.getBranch(branchId));
 
         for (const clipboardBranch of clipboardBranches) {
             const clipboardNote = await clipboardBranch.getNote();
 
-            await branchService.cloneNoteTo(clipboardNote.noteId, parentBranchId);
+            await branchService.cloneNoteToBranch(clipboardNote.noteId, parentBranchId);
         }
 
         // copy will keep clipboardBranchIds and clipboardMode so it's possible to paste into multiple places
@@ -60,9 +61,22 @@ async function pasteInto(parentBranchId) {
     }
 }
 
-function copy(branchIds) {
+async function copy(branchIds) {
     clipboardBranchIds = branchIds;
     clipboardMode = 'copy';
+
+    if (utils.isElectron()) {
+        // https://github.com/zadam/trilium/issues/2401
+        const {clipboard} = require('electron');
+        const links = [];
+
+        for (const branch of froca.getBranches(clipboardBranchIds)) {
+            const $link = await linkService.createNoteLink(branch.parentNoteId + '/' + branch.noteId, { referenceLink: true });
+            links.push($link[0].outerHTML);
+        }
+
+        clipboard.writeHTML(links.join(', '));
+    }
 
     toastService.showMessage("Note(s) have been copied into clipboard.");
 }
@@ -78,7 +92,7 @@ function cut(branchIds) {
 }
 
 function isClipboardEmpty() {
-    clipboardBranchIds = clipboardBranchIds.filter(branchId => !!treeCache.getBranch(branchId));
+    clipboardBranchIds = clipboardBranchIds.filter(branchId => !!froca.getBranch(branchId));
 
     return clipboardBranchIds.length === 0;
 }

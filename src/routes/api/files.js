@@ -1,7 +1,6 @@
 "use strict";
 
 const protectedSessionService = require('../../services/protected_session');
-const repository = require('../../services/repository');
 const utils = require('../../services/utils');
 const log = require('../../services/log');
 const noteRevisionService = require('../../services/note_revisions');
@@ -10,18 +9,19 @@ const fs = require('fs');
 const { Readable } = require('stream');
 const chokidar = require('chokidar');
 const ws = require('../../services/ws');
+const becca = require("../../becca/becca");
 
 function updateFile(req) {
     const {noteId} = req.params;
     const file = req.file;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
         return [404, `Note ${noteId} doesn't exist.`];
     }
 
-    noteRevisionService.createNoteRevision(note);
+    note.saveNoteRevision();
 
     note.mime = file.mimetype.toLowerCase();
     note.save();
@@ -29,8 +29,6 @@ function updateFile(req) {
     note.setContent(file.buffer);
 
     note.setLabel('originalFileName', file.originalname);
-
-    noteRevisionService.protectNoteRevisions(note);
 
     return {
         uploaded: true
@@ -44,10 +42,12 @@ function getFilename(note) {
 }
 
 function downloadNoteFile(noteId, res, contentDisposition = true) {
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
-        return res.status(404).send(`Note ${noteId} doesn't exist.`);
+        return res.setHeader("Content-Type", "text/plain")
+            .status(404)
+            .send(`Note ${noteId} doesn't exist.`);
     }
 
     if (note.isProtected && !protectedSessionService.isProtectedSessionAvailable()) {
@@ -60,6 +60,7 @@ function downloadNoteFile(noteId, res, contentDisposition = true) {
         res.setHeader('Content-Disposition', utils.getContentDisposition(filename));
     }
 
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader('Content-Type', note.mime);
 
     res.send(note.getContent());
@@ -79,7 +80,7 @@ function openFile(req, res) {
 
 function fileContentProvider(req) {
     // Read file name from route params.
-    const note = repository.getNote(req.params.noteId);
+    const note = becca.getNote(req.params.noteId);
     const fileName = getFilename(note);
     let content = note.getContent();
 
@@ -112,7 +113,7 @@ function fileContentProvider(req) {
 function saveToTmpDir(req) {
     const noteId = req.params.noteId;
 
-    const note = repository.getNote(noteId);
+    const note = becca.getNote(noteId);
 
     if (!note) {
         return [404,`Note ${noteId} doesn't exist.`];

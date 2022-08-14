@@ -1,13 +1,14 @@
-import TabAwareWidget from "../tab_aware_widget.js";
+import NoteContextAwareWidget from "../note_context_aware_widget.js";
 import noteAutocompleteService from "../../services/note_autocomplete.js";
 import server from "../../services/server.js";
 import contextMenuService from "../../services/context_menu.js";
 import attributesParser from "../../services/attribute_parser.js";
 import libraryLoader from "../../services/library_loader.js";
-import treeCache from "../../services/tree_cache.js";
+import froca from "../../services/froca.js";
 import attributeRenderer from "../../services/attribute_renderer.js";
 import noteCreateService from "../../services/note_create.js";
 import treeService from "../../services/tree.js";
+import attributeService from "../../services/attributes.js";
 
 const HELP_TEXT = `
 <p>To add label, just type e.g. <code>#rock</code> or if you want to add also value then e.g. <code>#year = 2020</code></p> 
@@ -166,6 +167,7 @@ const editorConfig = {
         'IncludeNote',
         'CutToNote',
         'Mathematics',
+        'AutoformatMath',
         'indentBlockShortcutPlugin',
         'removeFormatLinksPlugin'
     ],
@@ -176,7 +178,7 @@ const editorConfig = {
     mention: mentionSetup
 };
 
-export default class AttributeEditorWidget extends TabAwareWidget {
+export default class AttributeEditorWidget extends NoteContextAwareWidget {
     constructor(attributeDetailWidget) {
         super();
 
@@ -185,14 +187,14 @@ export default class AttributeEditorWidget extends TabAwareWidget {
 
     doRender() {
         this.$widget = $(TPL);
-        this.contentSized();
         this.$editor = this.$widget.find('.attribute-list-editor');
 
         this.initialized = this.initEditor();
 
         this.$editor.on('keydown', async e => {
             if (e.which === 13) {
-                await this.save();
+                // allow autocomplete to fill the result textarea
+                setTimeout(() => this.save(), 100);
             }
 
             this.attributeDetailWidget.hide();
@@ -215,26 +217,26 @@ export default class AttributeEditorWidget extends TabAwareWidget {
             y: e.pageY,
             orientation: 'left',
             items: [
-                {title: `Add new label <kbd data-command="addNewLabel"></kbd>`, command: "addNewLabel", uiIcon: "hash"},
-                {title: `Add new relation <kbd data-command="addNewRelation"></kbd>`, command: "addNewRelation", uiIcon: "transfer"},
+                {title: `Add new label <kbd data-command="addNewLabel"></kbd>`, command: "addNewLabel", uiIcon: "bx bx-hash"},
+                {title: `Add new relation <kbd data-command="addNewRelation"></kbd>`, command: "addNewRelation", uiIcon: "bx bx-transfer"},
                 {title: "----"},
-                {title: "Add new label definition", command: "addNewLabelDefinition", uiIcon: "empty"},
-                {title: "Add new relation definition", command: "addNewRelationDefinition", uiIcon: "empty"},
+                {title: "Add new label definition", command: "addNewLabelDefinition", uiIcon: "bx bx-empty"},
+                {title: "Add new relation definition", command: "addNewRelationDefinition", uiIcon: "bx bx-empty"},
             ],
             selectMenuItemHandler: ({command}) => this.handleAddNewAttributeCommand(command)
         });
     }
 
     // triggered from keyboard shortcut
-    addNewLabelEvent({tabId}) {
-        if (this.isTab(tabId)) {
+    addNewLabelEvent({ntxId}) {
+        if (this.isNoteContext(ntxId)) {
             this.handleAddNewAttributeCommand('addNewLabel');
         }
     }
 
     // triggered from keyboard shortcut
-    addNewRelationEvent({tabId}) {
-        if (this.isTab(tabId)) {
+    addNewRelationEvent({ntxId}) {
+        if (this.isNoteContext(ntxId)) {
             this.handleAddNewAttributeCommand('addNewRelation');
         }
     }
@@ -446,7 +448,7 @@ export default class AttributeEditorWidget extends TabAwareWidget {
     }
 
     async loadReferenceLinkTitle(noteId, $el) {
-        const note = await treeCache.getNote(noteId, true);
+        const note = await froca.getNote(noteId, true);
 
         let title;
 
@@ -466,6 +468,8 @@ export default class AttributeEditorWidget extends TabAwareWidget {
 
     async renderOwnedAttributes(ownedAttributes, saved) {
         ownedAttributes = ownedAttributes.filter(oa => !oa.isDeleted);
+        // attrs are not resorted if position changes after initial load
+        ownedAttributes.sort((a, b) => a.position < b.position ? -1 : 1);
 
         let htmlAttrs = (await attributeRenderer.renderAttributes(ownedAttributes, true)).html();
 
@@ -482,23 +486,8 @@ export default class AttributeEditorWidget extends TabAwareWidget {
         }
     }
 
-    async focusOnAttributesEvent({tabId}) {
-        if (this.tabContext.tabId === tabId) {
-            if (this.$editor.is(":visible")) {
-                this.$editor.trigger('focus');
-
-                this.textEditor.model.change(writer => { // put focus to the end of the content
-                    writer.setSelection(writer.createPositionAt(this.textEditor.model.document.getRoot(), 'end'));
-                });
-            }
-            else {
-                this.triggerEvent('focusOnDetail', {tabId: this.tabContext.tabId});
-            }
-        }
-    }
-
     async createNoteForReferenceLink(title) {
-        const {note} = await noteCreateService.createNote(this.notePath, {
+        const {note} = await noteCreateService.createNoteWithTypePrompt(this.notePath, {
             activate: false,
             title: title
         });
@@ -510,8 +499,18 @@ export default class AttributeEditorWidget extends TabAwareWidget {
         await this.renderOwnedAttributes(attributes, false);
     }
 
+    focus() {
+        this.$editor.trigger('focus');
+
+        this.textEditor.model.change( writer => {
+            const positionAt = writer.createPositionAt(this.textEditor.model.document.getRoot(), 'end');
+
+            writer.setSelection(positionAt);
+        } );
+    }
+
     entitiesReloadedEvent({loadResults}) {
-        if (loadResults.getAttributes(this.componentId).find(attr => attr.isAffecting(this.note))) {
+        if (loadResults.getAttributes(this.componentId).find(attr => attributeService.isAffecting(attr, this.note))) {
             this.refresh();
         }
     }

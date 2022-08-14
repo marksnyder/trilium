@@ -25,7 +25,6 @@ export default class HistoryNavigationWidget extends BasicWidget {
         }
 
         this.$widget = $(TPL);
-        this.contentSized();
 
         const contextMenuHandler = e => {
             e.preventDefault();
@@ -43,8 +42,7 @@ export default class HistoryNavigationWidget extends BasicWidget {
         this.$forwardInHistory = this.$widget.find("[data-trigger-command='forwardInNoteHistory']");
         this.$forwardInHistory.on('contextmenu', contextMenuHandler);
 
-        const electron = utils.dynamicRequire('electron');
-        this.webContents = electron.remote.getCurrentWindow().webContents;
+        this.webContents = utils.dynamicRequire('@electron/remote').webContents;
 
         // without this the history is preserved across frontend reloads
         this.webContents.clearHistory();
@@ -60,15 +58,15 @@ export default class HistoryNavigationWidget extends BasicWidget {
         for (const idx in this.webContents.history) {
             const url = this.webContents.history[idx];
             const [_, notePathWithTab] = url.split('#');
-            const [notePath, tabId] = notePathWithTab.split('-');
+            const [notePath, ntxId] = notePathWithTab.split('-');
 
             const title = await treeService.getNotePathTitle(notePath);
 
             items.push({
                 title,
                 idx,
-                uiIcon: idx == activeIndex ? "radio-circle-marked" : // compare with type coercion!
-                    (idx < activeIndex ? "left-arrow-alt" : "right-arrow-alt")
+                uiIcon: idx == activeIndex ? "bx bx-radio-circle-marked" : // compare with type coercion!
+                    (idx < activeIndex ? "bx bx-left-arrow-alt" : "bx bx-right-arrow-alt")
             });
         }
 

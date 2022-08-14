@@ -1,7 +1,7 @@
 import treeService from './tree.js';
-import contextMenu from "./context_menu.js";
+import linkContextMenuService from "./link_context_menu.js";
 import appContext from "./app_context.js";
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 import utils from "./utils.js";
 
 function getNotePathFromUrl(url) {
@@ -20,11 +20,23 @@ async function createNoteLink(notePath, options = {}) {
     let noteTitle = options.title;
     const showTooltip = options.showTooltip === undefined ? true : options.showTooltip;
     const showNotePath = options.showNotePath === undefined ? false : options.showNotePath;
+    const showNoteIcon = options.showNoteIcon === undefined ? false : options.showNoteIcon;
+    const referenceLink = options.referenceLink === undefined ? false : options.referenceLink;
+
+    const {noteId, parentNoteId} = treeService.getNoteIdAndParentIdFromNotePath(notePath);
 
     if (!noteTitle) {
-        const {noteId, parentNoteId} = treeService.getNoteIdAndParentIdFromNotePath(notePath);
-
         noteTitle = await treeService.getNoteTitle(noteId, parentNoteId);
+    }
+
+    const $container = $("<span>");
+
+    if (showNoteIcon) {
+        const note = await froca.getNote(noteId);
+
+        $container
+            .append($("<span>").addClass("bx " + note.getIcon()))
+            .append(" ");
     }
 
     const $noteLink = $("<a>", {
@@ -37,7 +49,11 @@ async function createNoteLink(notePath, options = {}) {
         $noteLink.addClass("no-tooltip-preview");
     }
 
-    const $container = $("<span>").append($noteLink);
+    if (referenceLink) {
+        $noteLink.addClass("reference-link");
+    }
+
+    $container.append($noteLink);
 
     if (showNotePath) {
         const resolvedNotePathSegments = await treeService.resolveNotePathToSegments(notePath);
@@ -69,10 +85,15 @@ function getNotePathFromLink($link) {
 }
 
 function goToLink(e) {
+    const $link = $(e.target).closest("a,.block-link");
+    const address = $link.attr('href');
+
+    if (address?.startsWith("data:")) {
+        return true;
+    }
+
     e.preventDefault();
     e.stopPropagation();
-
-    const $link = $(e.target).closest("a,.block-link");
 
     const notePath = getNotePathFromLink($link);
 
@@ -81,8 +102,17 @@ function goToLink(e) {
             appContext.tabManager.openTabWithNoteWithHoisting(notePath);
         }
         else if (e.which === 1) {
-            const activeTabContext = appContext.tabManager.getActiveTabContext();
-            activeTabContext.setNote(notePath);
+            const ntxId = $(e.target).closest("[data-ntx-id]").attr("data-ntx-id");
+
+            const noteContext = ntxId
+                ? appContext.tabManager.getNoteContextById(ntxId)
+                : appContext.tabManager.getActiveContext();
+
+            noteContext.setNote(notePath).then(() => {
+                if (noteContext !== appContext.tabManager.getActiveContext()) {
+                    appContext.tabManager.activateNoteContext(noteContext.ntxId);
+                }
+            });
         }
     }
     else {
@@ -90,8 +120,6 @@ function goToLink(e) {
             || $link.hasClass("ck-link-actions__preview") // within edit link dialog single click suffices
             || $link.closest("[contenteditable]").length === 0 // outside of CKEditor single click suffices
         ) {
-            const address = $link.attr('href');
-
             if (address) {
                 if (address.toLowerCase().startsWith('http')) {
                     window.open(address, '_blank');
@@ -119,26 +147,11 @@ function linkContextMenu(e) {
 
     e.preventDefault();
 
-    contextMenu.show({
-        x: e.pageX,
-        y: e.pageY,
-        items: [
-            {title: "Open note in new tab", command: "openNoteInNewTab", uiIcon: "empty"},
-            {title: "Open note in new window", command: "openNoteInNewWindow", uiIcon: "window-open"}
-        ],
-        selectMenuItemHandler: ({command}) => {
-            if (command === 'openNoteInNewTab') {
-                appContext.tabManager.openTabWithNoteWithHoisting(notePath);
-            }
-            else if (command === 'openNoteInNewWindow') {
-                appContext.triggerCommand('openInWindow', {notePath, hoistedNoteId: 'root'});
-            }
-        }
-    });
+    linkContextMenuService.openContextMenu(notePath, e);
 }
 
 async function loadReferenceLinkTitle(noteId, $el) {
-    const note = await treeCache.getNote(noteId, true);
+    const note = await froca.getNote(noteId, true);
 
     let title;
 
@@ -165,6 +178,16 @@ $(document).on('dblclick', "a", e => {
 
     if (address && address.startsWith('http')) {
         window.open(address, '_blank');
+    }
+});
+
+$(document).on('mousedown', 'a', e => {
+    if (e.which === 2) {
+        // prevent paste on middle click
+        // https://github.com/zadam/trilium/issues/2995
+        // https://developer.mozilla.org/en-US/docs/Web/API/Element/auxclick_event#preventing_default_actions
+        e.preventDefault();
+        return false;
     }
 });
 

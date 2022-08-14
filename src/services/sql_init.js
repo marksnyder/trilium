@@ -5,8 +5,8 @@ const sql = require('./sql');
 const utils = require('./utils');
 const optionService = require('./options');
 const port = require('./port');
-const Option = require('../entities/option');
-const TaskContext = require('./task_context.js');
+const Option = require('../becca/entities/option');
+const TaskContext = require('./task_context');
 const migrationService = require('./migration');
 const cls = require('./cls');
 const config = require('./config');
@@ -32,23 +32,20 @@ function isDbInitialized() {
 
 async function initDbConnection() {
     if (!isDbInitialized()) {
-        log.info(`DB not initialized, please visit setup page` + (utils.isElectron() ? '' : ` - http://[your-server-host]:${await port} to see instructions on how to initialize Trilium.`));
+        log.info(`DB not initialized, please visit setup page` +
+            (utils.isElectron() ? '' : ` - http://[your-server-host]:${await port} to see instructions on how to initialize Trilium.`));
 
         return;
     }
 
     await migrationService.migrateIfNecessary();
 
-    require('./options_init').initStartupOptions();
-
     sql.execute('CREATE TEMP TABLE "param_list" (`paramId` TEXT NOT NULL PRIMARY KEY)');
 
     dbReady.resolve();
 }
 
-async function createInitialDatabase(username, password, theme) {
-    log.info("Creating initial database ...");
-
+async function createInitialDatabase() {
     if (isDbInitialized()) {
         throw new Error("DB is already initialized");
     }
@@ -59,10 +56,16 @@ async function createInitialDatabase(username, password, theme) {
     let rootNote;
 
     sql.transactional(() => {
+        log.info("Creating database schema ...");
+
         sql.executeScript(schema);
 
-        const Note = require("../entities/note");
-        const Branch = require("../entities/branch");
+        require("../becca/becca_loader").load();
+
+        const Note = require("../becca/entities/note");
+        const Branch = require("../becca/entities/branch");
+
+        log.info("Creating root note ...");
 
         rootNote = new Note({
             noteId: 'root',
@@ -80,21 +83,36 @@ async function createInitialDatabase(username, password, theme) {
             isExpanded: true,
             notePosition: 10
         }).save();
+
+        const optionsInitService = require('./options_init');
+
+        optionsInitService.initDocumentOptions();
+        optionsInitService.initNotSyncedOptions(true, {});
+        optionsInitService.initStartupOptions();
+        require("./password").resetPassword();
     });
 
-    const dummyTaskContext = new TaskContext("initial-demo-import", 'import', false);
+    log.info("Importing demo content ...");
+
+    const dummyTaskContext = new TaskContext("no-progress-reporting", 'import', false);
 
     const zipImportService = require("./import/zip");
     await zipImportService.importZip(dummyTaskContext, demoFile, rootNote);
 
     sql.transactional(() => {
+        // this needs to happen after ZIP import
+        // previous solution was to move option initialization here but then the important parts of initialization
+        // are not all in one transaction (because ZIP import is async and thus not transactional)
+
         const startNoteId = sql.getValue("SELECT noteId FROM branches WHERE parentNoteId = 'root' AND isDeleted = 0 ORDER BY notePosition");
 
-        const optionsInitService = require('./options_init');
-
-        optionsInitService.initDocumentOptions();
-        optionsInitService.initSyncedOptions(username, password);
-        optionsInitService.initNotSyncedOptions(true, startNoteId, { theme });
+        const optionService = require("./options");
+        optionService.setOption('openTabs', JSON.stringify([
+            {
+                notePath: startNoteId,
+                active: true
+            }
+        ]));
     });
 
     log.info("Schema and initial content generated.");
@@ -114,7 +132,7 @@ function createDatabaseForSync(options, syncServerHost = '', syncProxy = '') {
     sql.transactional(() => {
         sql.executeScript(schema);
 
-        require('./options_init').initNotSyncedOptions(false, 'root', { syncServerHost, syncProxy });
+        require('./options_init').initNotSyncedOptions(false,  { syncServerHost, syncProxy });
 
         // document options required for sync to kick off
         for (const opt of options) {
@@ -133,6 +151,15 @@ function setDbAsInitialized() {
     }
 }
 
+function optimize() {
+    log.info("Optimizing database");
+    const start = Date.now();
+
+    sql.execute("PRAGMA optimize");
+
+    log.info(`Optimization finished in ${Date.now() - start}ms.`);
+}
+
 dbReady.then(() => {
     if (config.General && config.General.noBackup === true) {
         log.info("Disabling scheduled backups.");
@@ -144,16 +171,25 @@ dbReady.then(() => {
 
     // kickoff first backup soon after start up
     setTimeout(() => require('./backup').regularBackup(), 5 * 60 * 1000);
+
+    // optimize is usually inexpensive no-op so running it semi-frequently is not a big deal
+    setTimeout(() => optimize(), 60 * 60 * 1000);
+
+    setInterval(() => optimize(), 10 * 60 * 60 * 1000);
 });
 
-log.info("DB size: " + sql.getValue("SELECT page_count * page_size / 1000 as size FROM pragma_page_count(), pragma_page_size()") + " KB");
+function getDbSize() {
+    return sql.getValue("SELECT page_count * page_size / 1000 as size FROM pragma_page_count(), pragma_page_size()");
+}
+
+log.info(`DB size: ${getDbSize()} KB`);
 
 module.exports = {
     dbReady,
     schemaExists,
     isDbInitialized,
-    initDbConnection,
     createInitialDatabase,
     createDatabaseForSync,
-    setDbAsInitialized
+    setDbAsInitialized,
+    getDbSize
 };

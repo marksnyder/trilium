@@ -1,4 +1,4 @@
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 import bundleService from "./bundle.js";
 import RootCommandExecutor from "./root_command_executor.js";
 import Entrypoints from "./entrypoints.js";
@@ -11,7 +11,6 @@ import Component from "../widgets/component.js";
 import keyboardActionsService from "./keyboard_actions.js";
 import MobileScreenSwitcherExecutor from "../widgets/mobile_widgets/mobile_screen_switcher.js";
 import MainTreeExecutors from "./main_tree_executors.js";
-import protectedSessionHolder from "./protected_session_holder.js";
 import toast from "./toast.js";
 
 class AppContext extends Component {
@@ -28,7 +27,7 @@ class AppContext extends Component {
     }
 
     async start() {
-        await Promise.all([treeCache.initializedPromise, options.initializedPromise]);
+        await Promise.all([froca.initializedPromise, options.initializedPromise]);
 
         this.showWidgets();
 
@@ -79,12 +78,12 @@ class AppContext extends Component {
         this.triggerEvent('initialRenderComplete');
     }
 
-    /** @return {Promise} */
+    /** @returns {Promise} */
     triggerEvent(name, data) {
         return this.handleEvent(name, data);
     }
 
-    /** @return {Promise} */
+    /** @returns {Promise} */
     triggerCommand(name, data = {}) {
         for (const executor of this.executors) {
             const fun = executor[name + "Command"];
@@ -145,23 +144,23 @@ $(window).on('beforeunload', () => {
 });
 
 function isNotePathInAddress() {
-    const [notePath, tabId] = treeService.getHashValueFromAddress();
+    const [notePath, ntxId] = treeService.getHashValueFromAddress();
 
     return notePath.startsWith("root")
         // empty string is for empty/uninitialized tab
-        || (notePath === '' && !!tabId);
+        || (notePath === '' && !!ntxId);
 }
 
 $(window).on('hashchange', function() {
     if (isNotePathInAddress()) {
-        const [notePath, tabId] = treeService.getHashValueFromAddress();
+        const [notePath, ntxId] = treeService.getHashValueFromAddress();
 
         if (!notePath) {
             console.log(`Invalid hash value "${document.location.hash}", ignoring.`);
             return;
         }
 
-        appContext.tabManager.switchToTab(tabId, notePath);
+        appContext.tabManager.switchToNoteContext(ntxId, notePath);
     }
 });
 

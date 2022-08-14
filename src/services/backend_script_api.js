@@ -6,14 +6,14 @@ const attributeService = require('./attributes');
 const dateNoteService = require('./date_notes');
 const treeService = require('./tree');
 const config = require('./config');
-const repository = require('./repository');
 const axios = require('axios');
 const dayjs = require('dayjs');
 const xml2js = require('xml2js');
 const cloningService = require('./cloning');
 const appInfo = require('./app_info');
 const searchService = require('./search/services/search');
-const SearchContext = require("./search/search_context.js");
+const SearchContext = require("./search/search_context");
+const becca = require("../becca/becca");
 
 /**
  * This is the main backend API interface for scripts. It's published in the local "api" object.
@@ -58,39 +58,21 @@ function BackendScriptApi(currentNote, apiParams) {
      * @param {string} noteId
      * @returns {Note|null}
      */
-    this.getNote = repository.getNote;
+    this.getNote = noteId => becca.getNote(noteId);
 
     /**
      * @method
      * @param {string} branchId
      * @returns {Branch|null}
      */
-    this.getBranch = repository.getBranch;
+    this.getBranch = branchId => becca.getBranch(branchId);
 
     /**
      * @method
      * @param {string} attributeId
      * @returns {Attribute|null}
      */
-    this.getAttribute = repository.getAttribute;
-
-    /**
-     * Retrieves first entity from the SQL's result set.
-     *
-     * @method
-     * @param {string} SQL query
-     * @param {Array.<?>} array of params
-     * @returns {Entity|null}
-     */
-    this.getEntity = repository.getEntity;
-
-    /**
-     * @method
-     * @param {string} SQL query
-     * @param {Array.<?>} array of params
-     * @returns {Entity[]}
-     */
-    this.getEntities = repository.getEntities;
+    this.getAttribute = attributeId => becca.getAttribute(attributeId);
 
     /**
      * This is a powerful search method - you can search by attributes and their values, e.g.:
@@ -110,10 +92,10 @@ function BackendScriptApi(currentNote, apiParams) {
             searchParams.ignoreHoistedNote = true;
         }
 
-        const noteIds = searchService.findNotesWithQuery(query, new SearchContext(searchParams))
+        const noteIds = searchService.findResultsWithQuery(query, new SearchContext(searchParams))
             .map(sr => sr.noteId);
 
-        return repository.getNotes(noteIds);
+        return becca.getNotes(noteIds);
     };
 
     /**
@@ -152,18 +134,18 @@ function BackendScriptApi(currentNote, apiParams) {
     this.getNoteWithLabel = attributeService.getNoteWithLabel;
 
     /**
-     * If there's no branch between note and parent note, create one. Otherwise do nothing.
+     * If there's no branch between note and parent note, create one. Otherwise, do nothing.
      *
      * @method
      * @param {string} noteId
      * @param {string} parentNoteId
-     * @param {string} prefix - if branch will be create between note and parent note, set this prefix
+     * @param {string} prefix - if branch will be created between note and parent note, set this prefix
      * @returns {void}
      */
     this.ensureNoteIsPresentInParent = cloningService.ensureNoteIsPresentInParent;
 
     /**
-     * If there's a branch between note and parent note, remove it. Otherwise do nothing.
+     * If there's a branch between note and parent note, remove it. Otherwise, do nothing.
      *
      * @method
      * @param {string} noteId
@@ -179,7 +161,7 @@ function BackendScriptApi(currentNote, apiParams) {
      * @param {boolean} present - true if we want the branch to exist, false if we want it gone
      * @param {string} noteId
      * @param {string} parentNoteId
-     * @param {string} prefix - if branch will be create between note and parent note, set this prefix
+     * @param {string} prefix - if branch will be created between note and parent note, set this prefix
      * @returns {void}
      */
     this.toggleNoteInParent = cloningService.toggleNoteInParent;
@@ -228,7 +210,7 @@ function BackendScriptApi(currentNote, apiParams) {
      * @property {string} parentNoteId - MANDATORY
      * @property {string} title - MANDATORY
      * @property {string|buffer} content - MANDATORY
-     * @property {string} type - text, code, file, image, search, book, relation-map - MANDATORY
+     * @property {string} type - text, code, file, image, search, book, relation-map, canvas - MANDATORY
      * @property {string} mime - value is derived from default mimes for type
      * @property {boolean} isProtected - default is false
      * @property {boolean} isExpanded - default is false
@@ -274,7 +256,7 @@ function BackendScriptApi(currentNote, apiParams) {
         extraOptions.parentNoteId = parentNoteId;
         extraOptions.title = title;
 
-        const parentNote = repository.getNote(parentNoteId);
+        const parentNote = becca.getNote(parentNoteId);
 
         // code note type can be inherited, otherwise text is default
         extraOptions.type = parentNote.type === 'code' ? 'code' : 'text';
@@ -311,7 +293,7 @@ function BackendScriptApi(currentNote, apiParams) {
      *
      * @param message
      */
-    this.log = message => log.info(`Script "${currentNote.title}" (${currentNote.noteId}): ${message}`);
+    this.log = message => log.info(message);
 
     /**
      * Returns root note of the calendar.
@@ -327,8 +309,18 @@ function BackendScriptApi(currentNote, apiParams) {
      * @method
      * @param {string} date in YYYY-MM-DD format
      * @returns {Note|null}
+     * @deprecated use getDayNote instead
      */
-    this.getDateNote = dateNoteService.getDateNote;
+    this.getDateNote = dateNoteService.getDayNote;
+
+    /**
+     * Returns day note for given date. If such note doesn't exist, it is created.
+     *
+     * @method
+     * @param {string} date in YYYY-MM-DD format
+     * @returns {Note|null}
+     */
+    this.getDayNote = dateNoteService.getDayNote;
 
     /**
      * Returns today's day note. If such note doesn't exist, it is created.
@@ -370,7 +362,7 @@ function BackendScriptApi(currentNote, apiParams) {
      * @method
      * @param {string} parentNoteId - this note's child notes will be sorted
      */
-    this.sortNotesByTitle = treeService.sortNotesByTitle;
+    this.sortNotesByTitle = parentNoteId => treeService.sortNotes(parentNoteId);
 
     /**
      * This method finds note by its noteId and prefix and either sets it to the given parentNoteId
@@ -434,6 +426,15 @@ function BackendScriptApi(currentNote, apiParams) {
      * @return {{syncVersion, appVersion, buildRevision, dbVersion, dataDirectory, buildDate}|*} - object representing basic info about running Trilium version
      */
     this.getAppInfo = () => appInfo
+
+    /**
+     * This object contains "at your risk" and "no BC guarantees" objects for advanced use cases.
+     *
+     * @type {{becca: Becca}}
+     */
+    this.__private = {
+        becca
+    }
 }
 
 module.exports = BackendScriptApi;

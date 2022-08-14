@@ -28,9 +28,9 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>Note<span class="signature">(row)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>Note<span class="signature">()</span><span class="type-signature"></span></h2>
         
-            <div class="class-description">This represents a Note which is a central object in the Trilium Notes project.</div>
+            <div class="class-description">Trilium's main entity which can represent text note, image, code note, file attachment etc.</div>
         
     
 </header>
@@ -45,7 +45,7 @@
     
 
     
-    <h4 class="name" id="Note"><span class="type-signature"></span>new Note<span class="signature">(row)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Note"><span class="type-signature"></span>new Note<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -60,335 +60,6 @@
 
 
 
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>row</code></td>
-            
-
-            <td class="type">
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">object containing database row from "notes" table</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>noteId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">primary key</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>type</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">one of "text", "code", "file" or "render"</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>mime</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">MIME type, e.g. "text/html"</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>title</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">note title</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>isProtected</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">true if note is protected</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>isDeleted</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">true if note is deleted</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>deleteId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-|
-
-<span class="param-type">null</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">ID identifying delete transaction</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>dateCreated</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">local date time (with offset)</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>dateModified</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">local date time (with offset)</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>utcDateCreated</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>utcDateModified</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -422,7 +93,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line31">line 31</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line24">line 24</a>
     </li></ul></dd>
     
 
@@ -462,7 +133,7 @@
 
 
     <ul>
-        <li><a href="Entity.html">Entity</a></li>
+        <li><a href="AbstractEntity.html">AbstractEntity</a></li>
     </ul>
 
 
@@ -478,6 +149,824 @@
 
     
 
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="becca"><span class="type-signature">(protected) </span>becca<span class="type-signature"></span></h4>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#becca">AbstractEntity#becca</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line50">line 50</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="dateCreated"><span class="type-signature"></span>dateCreated<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line68">line 68</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="dateModified"><span class="type-signature"></span>dateModified<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line70">line 70</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="flatTextCache"><span class="type-signature"></span>flatTextCache<span class="type-signature"> :string|null</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line84">line 84</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="isDecrypted"><span class="type-signature"></span>isDecrypted<span class="type-signature"> :boolean</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line79">line 79</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="isProtected"><span class="type-signature"></span>isProtected<span class="type-signature"> :boolean</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line62">line 62</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="mime"><span class="type-signature"></span>mime<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line66">line 66</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="noteId"><span class="type-signature"></span>noteId<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line58">line 58</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="title"><span class="type-signature"></span>title<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line60">line 60</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="type"><span class="type-signature"></span>type<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="utcDateCreated"><span class="type-signature"></span>utcDateCreated<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line72">line 72</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="utcDateModified"><span class="type-signature"></span>utcDateModified<span class="type-signature"> :string</span></h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line74">line 74</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
     
 
     
@@ -537,7 +1026,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line541">line 541</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1077">line 1077</a>
     </li></ul></dd>
     
 
@@ -580,6 +1069,690 @@
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="addEntityChange"><span class="type-signature">(protected) </span>addEntityChange<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#addEntityChange">AbstractEntity#addEntityChange</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line59">line 59</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="beforeSaving"><span class="type-signature">(protected) </span>beforeSaving<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#beforeSaving">AbstractEntity#beforeSaving</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="cloneTo"><span class="type-signature"></span>cloneTo<span class="signature">(parentNoteId)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>parentNoteId</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1179">line 1179</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="deleteNote"><span class="type-signature"></span>deleteNote<span class="signature">(deleteId<span class="signature-attributes">opt</span>, taskContext<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    (Soft) delete a note and all its descendants.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>deleteId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">optional delete identified</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>taskContext</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">TaskContext</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1193">line 1193</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="generateHash"><span class="type-signature">(protected) </span>generateHash<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#generateHash">AbstractEntity#generateHash</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line30">line 30</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="generateIdIfNecessary"><span class="type-signature">(protected) </span>generateIdIfNecessary<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#generateIdIfNecessary">AbstractEntity#generateIdIfNecessary</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line23">line 23</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -639,7 +1812,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line865">line 865</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line999">line 999</a>
     </li></ul></dd>
     
 
@@ -680,6 +1853,108 @@
     <dd>
         
 <span class="param-type">Array.&lt;Array.&lt;string>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getAncestors"><span class="type-signature"></span>getAncestors<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line919">line 919</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
 
 
     </dd>
@@ -817,7 +2092,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line440">line 440</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line573">line 573</a>
     </li></ul></dd>
     
 
@@ -1017,7 +2292,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line279">line 279</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line363">line 363</a>
     </li></ul></dd>
     
 
@@ -1195,7 +2470,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line451">line 451</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line584">line 584</a>
     </li></ul></dd>
     
 
@@ -1292,6 +2567,8 @@
     
 
     
+        <dt class="important tag-deprecated">Deprecated:</dt><dd><ul class="dummy"><li>use getParentBranches() instead</li></ul></dd>
+    
 
     
 
@@ -1304,7 +2581,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line811">line 811</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line161">line 161</a>
     </li></ul></dd>
     
 
@@ -1406,7 +2683,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line839">line 839</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -1434,10 +2711,6 @@
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    child branches of this note
-</div>
-
 
 
 <dl>
@@ -1512,7 +2785,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line825">line 825</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line171">line 171</a>
     </li></ul></dd>
     
 
@@ -1540,10 +2813,6 @@
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    child notes of this note
-</div>
-
 
 
 <dl>
@@ -1618,7 +2887,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line75">line 75</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line195">line 195</a>
     </li></ul></dd>
     
 
@@ -1720,7 +2989,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line111">line 111</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -1774,12 +3043,18 @@
     
 
     
-    <h4 class="name" id="getDescendantNoteIds"><span class="type-signature"></span>getDescendantNoteIds<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;string>}</span></h4>
+    <h4 class="name" id="getFlatText"><span class="type-signature"></span>getFlatText<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
 
 
+
+<div class="description">
+    This is used for:
+- fast searching
+- note similarity evaluation
+</div>
 
 
 
@@ -1822,7 +3097,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line711">line 711</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line714">line 714</a>
     </li></ul></dd>
     
 
@@ -1851,7 +3126,7 @@
 
         
 <div class="param-desc">
-    return list of all descendant noteIds of this note. Returning just noteIds because number of notes can be huge. Includes also this note's noteId
+    - returns flattened textual representation of note, prefixes and attributes
 </div>
 
 
@@ -1862,632 +3137,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Array.&lt;string></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getDescendantNotesWithAttribute"><span class="type-signature"></span>getDescendantNotesWithAttribute<span class="signature">(type, name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Finds descendant notes with given attribute name and value. Only own attributes are considered, not inherited ones
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>type</code></td>
-            
-
-            <td class="type">
-            
-                
 <span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">attribute type (label, relation, etc.)</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">attribute name</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>value</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">attribute value</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line734">line 734</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getDescendantNotesWithLabel"><span class="type-signature"></span>getDescendantNotesWithLabel<span class="signature">(name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Finds descendant notes with given label name and value. Only own labels are considered, not inherited ones
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">label name</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>value</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">label value</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line772">line 772</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getDescendantNotesWithRelation"><span class="type-signature"></span>getDescendantNotesWithRelation<span class="signature">(name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Finds descendant notes with given relation name and value. Only own relations are considered, not inherited ones
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">relation name</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>value</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">relation value</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line781">line 781</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
 
 
     </dd>
@@ -2553,7 +3203,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line122">line 122</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line256">line 256</a>
     </li></ul></dd>
     
 
@@ -2704,7 +3354,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line594">line 594</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line514">line 514</a>
     </li></ul></dd>
     
 
@@ -2874,7 +3524,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line302">line 302</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line605">line 605</a>
     </li></ul></dd>
     
 
@@ -3029,7 +3679,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line618">line 618</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line538">line 538</a>
     </li></ul></dd>
     
 
@@ -3090,16 +3740,13 @@
     
 
     
-    <h4 class="name" id="getLinks"><span class="type-signature"></span>getLinks<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Attribute.html">Attribute</a>>}</span></h4>
+    <h4 class="name" id="getLabelValues"><span class="type-signature"></span>getLabelValues<span class="signature">(name<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;string>}</span></h4>
     
 
     
 
 
 
-<div class="description">
-    Get list of links coming out of this note.
-</div>
 
 
 
@@ -3107,6 +3754,66 @@
 
 
 
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">label name to filter</td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -3130,8 +3837,6 @@
     
 
     
-        <dt class="important tag-deprecated">Deprecated:</dt><dd><ul class="dummy"><li>- not intended for general use</li></ul></dd>
-    
 
     
 
@@ -3144,7 +3849,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line798">line 798</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line613">line 613</a>
     </li></ul></dd>
     
 
@@ -3172,6 +3877,10 @@
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    all note's label values, including inherited ones
+</div>
+
 
 
 <dl>
@@ -3180,7 +3889,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Array.&lt;<a href="Attribute.html">Attribute</a>></span>
+<span class="param-type">Array.&lt;string></span>
 
 
     </dd>
@@ -3246,7 +3955,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line261">line 261</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line683">line 683</a>
     </li></ul></dd>
     
 
@@ -3306,17 +4015,12 @@ This method can be significantly faster than the getAttribute()
     
 
     
-    <h4 class="name" id="getOwnedAttributes"><span class="type-signature"></span>getOwnedAttributes<span class="signature">(type<span class="signature-attributes">opt</span>, name<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Attribute.html">Attribute</a>>}</span></h4>
+    <h4 class="name" id="getOwnedAttributes"><span class="type-signature"></span>getOwnedAttributes<span class="signature">(type<span class="signature-attributes">opt</span>, name<span class="signature-attributes">opt</span>, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Attribute.html">Attribute</a>>}</span></h4>
     
 
     
 
 
-
-<div class="description">
-    This method is a faster variant of getAttributes() which looks for only owned attributes.
-Use when inheritance is not needed and/or in batch/performance sensitive operations.
-</div>
 
 
 
@@ -3416,6 +4120,39 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">(optional) attribute value to filter</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -3453,7 +4190,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line237">line 237</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line655">line 655</a>
     </li></ul></dd>
     
 
@@ -3631,7 +4368,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line462">line 462</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line595">line 595</a>
     </li></ul></dd>
     
 
@@ -3789,7 +4526,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line600">line 600</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line520">line 520</a>
     </li></ul></dd>
     
 
@@ -3959,7 +4696,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line310">line 310</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line621">line 621</a>
     </li></ul></dd>
     
 
@@ -4114,7 +4851,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line624">line 624</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line544">line 544</a>
     </li></ul></dd>
     
 
@@ -4158,6 +4895,173 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 |
 
 <span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getOwnedLabelValues"><span class="type-signature"></span>getOwnedLabelValues<span class="signature">(name<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;string>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">label name to filter</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line629">line 629</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    all note's label values, excluding inherited ones
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;string></span>
 
 
     </dd>
@@ -4272,7 +5176,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line612">line 612</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line532">line 532</a>
     </li></ul></dd>
     
 
@@ -4442,7 +5346,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line326">line 326</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line645">line 645</a>
     </li></ul></dd>
     
 
@@ -4483,164 +5387,6 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     <dd>
         
 <span class="param-type">Array.&lt;<a href="Attribute.html">Attribute</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getOwnedRelationTarget"><span class="type-signature"></span>getOwnedRelationTarget<span class="signature">(name)</span><span class="type-signature"> &rarr; {<a href="Note.html">Note</a>|null}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line652">line 652</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    target note of the relation or null (if target is empty or note was not found)
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="Note.html">Note</a></span>
-|
-
-<span class="param-type">null</span>
 
 
     </dd>
@@ -4755,7 +5501,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line636">line 636</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line556">line 556</a>
     </li></ul></dd>
     
 
@@ -4799,6 +5545,108 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 |
 
 <span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getParentBranches"><span class="type-signature"></span>getParentBranches<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Branch.html">Branch</a>>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line153">line 153</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Branch.html">Branch</a>></span>
 
 
     </dd>
@@ -4864,7 +5712,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line851">line 851</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line166">line 166</a>
     </li></ul></dd>
     
 
@@ -4892,10 +5740,6 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    parent notes of this note (note can have multiple parents because of cloning)
-</div>
-
 
 
 <dl>
@@ -4911,6 +5755,95 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getPojoToSave"><span class="type-signature">(protected) </span>getPojoToSave<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#getPojoToSave">AbstractEntity#getPojoToSave</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line71">line 71</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5019,7 +5952,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line606">line 606</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line526">line 526</a>
     </li></ul></dd>
     
 
@@ -5189,7 +6122,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line318">line 318</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line637">line 637</a>
     </li></ul></dd>
     
 
@@ -5230,327 +6163,6 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     <dd>
         
 <span class="param-type">Array.&lt;<a href="Attribute.html">Attribute</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getRelationTarget"><span class="type-signature"></span>getRelationTarget<span class="signature">(name)</span><span class="type-signature"> &rarr; {<a href="Note.html">Note</a>|null}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line642">line 642</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    target note of the relation or null (if target is empty or note was not found)
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="Note.html">Note</a></span>
-|
-
-<span class="param-type">null</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getRelationTargets"><span class="type-signature"></span>getRelationTargets<span class="signature">(name<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">relation name to filter</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line334">line 334</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
 
 
     </dd>
@@ -5665,7 +6277,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line630">line 630</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line550">line 550</a>
     </li></ul></dd>
     
 
@@ -5726,113 +6338,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="getRevisions"><span class="type-signature"></span>getRevisions<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="NoteRevision.html">NoteRevision</a>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Returns note revisions of this note.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line788">line 788</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="NoteRevision.html">NoteRevision</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getScriptEnv"><span class="type-signature"></span>getScriptEnv<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="getScriptEnv"><span class="type-signature"></span>getScriptEnv<span class="signature">()</span><span class="type-signature"> &rarr; {string|null}</span></h4>
     
 
     
@@ -5880,7 +6386,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line208">line 208</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line342">line 342</a>
     </li></ul></dd>
     
 
@@ -5921,6 +6427,9 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     <dd>
         
 <span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
 
 
     </dd>
@@ -5938,7 +6447,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="getTargetRelations"><span class="type-signature"></span>getTargetRelations<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Attribute.html">Attribute</a>>}</span></h4>
+    <h4 class="name" id="getSubtreeNoteIds"><span class="type-signature"></span>getSubtreeNoteIds<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;String>}</span></h4>
     
 
     
@@ -5986,7 +6495,313 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line270">line 270</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line862">line 862</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;String></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getSubtreeNotes"><span class="type-signature"></span>getSubtreeNotes<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line841">line 841</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getSubtreeNotesIncludingTemplated"><span class="type-signature"></span>getSubtreeNotesIncludingTemplated<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line810">line 810</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getTemplatedNotes"><span class="type-signature"></span>getTemplatedNotes<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Note.html">Note</a>>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line961">line 961</a>
     </li></ul></dd>
     
 
@@ -6015,7 +6830,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 
         
 <div class="param-desc">
-    relations targetting this specific note
+    - returns only notes which are templated, does not include their subtrees
+                    in effect returns notes which are influenced by note's non-inheritable attributes
 </div>
 
 
@@ -6026,7 +6842,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     </dt>
     <dd>
         
-<span class="param-type">Array.&lt;<a href="Attribute.html">Attribute</a>></span>
+<span class="param-type">Array.&lt;<a href="Note.html">Note</a>></span>
 
 
     </dd>
@@ -6044,7 +6860,198 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="hasAttribute"><span class="type-signature"></span>hasAttribute<span class="signature">(type, name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="getUtcDateChanged"><span class="type-signature">(protected) </span>getUtcDateChanged<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#getUtcDateChanged">AbstractEntity#getUtcDateChanged</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line45">line 45</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="hasAncestor"><span class="type-signature"></span>hasAncestor<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line945">line 945</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="hasAttribute"><span class="type-signature"></span>hasAttribute<span class="signature">(type, name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -6072,6 +7079,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -6089,18 +7098,21 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 
             <td class="type">
             
-                
-<span class="param-type">string</span>
-
-
-            
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">attribute type (label, relation, etc.)</td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -6112,18 +7124,49 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 
             <td class="type">
             
+            </td>
+
+            
+                <td class="attributes">
                 
-<span class="param-type">string</span>
 
+                
 
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
             
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">attribute name</td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -6164,7 +7207,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line422">line 422</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line458">line 458</a>
     </li></ul></dd>
     
 
@@ -6192,10 +7235,6 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    true if note has an attribute with given type and name (including inherited)
-</div>
-
 
 
 <dl>
@@ -6270,7 +7309,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line818">line 818</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line176">line 176</a>
     </li></ul></dd>
     
 
@@ -6298,10 +7337,6 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    - true if note has children
-</div>
-
 
 
 <dl>
@@ -6328,7 +7363,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="hasLabel"><span class="type-signature"></span>hasLabel<span class="signature">(name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="hasLabel"><span class="type-signature"></span>hasLabel<span class="signature">(name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -6356,6 +7391,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -6381,10 +7418,51 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">label name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">label value</td>
         </tr>
 
     
@@ -6425,7 +7503,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line570">line 570</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line487">line 487</a>
     </li></ul></dd>
     
 
@@ -6483,7 +7561,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="hasOwnedAttribute"><span class="type-signature"></span>hasOwnedAttribute<span class="signature">(type, name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="hasOwnedAttribute"><span class="type-signature"></span>hasOwnedAttribute<span class="signature">(type, name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -6511,6 +7589,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -6536,6 +7616,14 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -6559,10 +7647,51 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">attribute name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">attribute value</td>
         </tr>
 
     
@@ -6603,7 +7732,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line431">line 431</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line564">line 564</a>
     </li></ul></dd>
     
 
@@ -6661,7 +7790,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="hasOwnedLabel"><span class="type-signature"></span>hasOwnedLabel<span class="signature">(name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="hasOwnedLabel"><span class="type-signature"></span>hasOwnedLabel<span class="signature">(name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -6689,6 +7818,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -6714,10 +7845,51 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">label name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">label value</td>
         </tr>
 
     
@@ -6758,7 +7930,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line576">line 576</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line494">line 494</a>
     </li></ul></dd>
     
 
@@ -6816,7 +7988,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="hasOwnedRelation"><span class="type-signature"></span>hasOwnedRelation<span class="signature">(name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="hasOwnedRelation"><span class="type-signature"></span>hasOwnedRelation<span class="signature">(name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -6844,6 +8016,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -6869,10 +8043,51 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">relation name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">relation value</td>
         </tr>
 
     
@@ -6913,7 +8128,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line588">line 588</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line508">line 508</a>
     </li></ul></dd>
     
 
@@ -6971,7 +8186,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
 
     
-    <h4 class="name" id="hasRelation"><span class="type-signature"></span>hasRelation<span class="signature">(name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="hasRelation"><span class="type-signature"></span>hasRelation<span class="signature">(name, value<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -6999,6 +8214,8 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -7024,10 +8241,51 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">relation name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">relation value</td>
         </tr>
 
     
@@ -7068,7 +8326,7 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line582">line 582</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line501">line 501</a>
     </li></ul></dd>
     
 
@@ -7115,95 +8373,6 @@ Use when inheritance is not needed and/or in batch/performance sensitive operati
 </dl>
 
     
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="invalidateAttributeCache"><span class="type-signature"></span>invalidateAttributeCache<span class="signature">()</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Clear note's attributes cache to force fresh reload for next attribute request.
-Cache is note instance scoped.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line349">line 349</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7307,7 +8476,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line896">line 896</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1020">line 1020</a>
     </li></ul></dd>
     
 
@@ -7413,7 +8582,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line198">line 198</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line331">line 331</a>
     </li></ul></dd>
     
 
@@ -7519,7 +8688,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line190">line 190</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line323">line 323</a>
     </li></ul></dd>
     
 
@@ -7625,7 +8794,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line185">line 185</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line318">line 318</a>
     </li></ul></dd>
     
 
@@ -7731,7 +8900,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line180">line 180</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line313">line 313</a>
     </li></ul></dd>
     
 
@@ -7837,7 +9006,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line203">line 203</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line337">line 337</a>
     </li></ul></dd>
     
 
@@ -7884,6 +9053,165 @@ Cache is note instance scoped.
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="markAsDeleted"><span class="type-signature"></span>markAsDeleted<span class="signature">(deleteId<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Mark the entity as (soft) deleted. It will be completely erased later.
+
+This is a low level method, for notes and branches use `note.deleteNote()` and 'branch.deleteBranch()` instead.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>deleteId</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#markAsDeleted">AbstractEntity#markAsDeleted</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line125">line 125</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -8070,7 +9398,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line525">line 525</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1064">line 1064</a>
     </li></ul></dd>
     
 
@@ -8250,7 +9578,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line698">line 698</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1155">line 1155</a>
     </li></ul></dd>
     
 
@@ -8430,7 +9758,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line706">line 706</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1163">line 1163</a>
     </li></ul></dd>
     
 
@@ -8455,6 +9783,222 @@ Cache is note instance scoped.
 
 
 
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="save"><span class="type-signature"></span>save<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="AbstractEntity.html">AbstractEntity</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Saves entity - executes SQL, but doesn't commit the transaction on its own
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="AbstractEntity.html#save">AbstractEntity#save</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_abstract_entity.js.html">becca/entities/abstract_entity.js</a>, <a href="becca_entities_abstract_entity.js.html#line80">line 80</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="AbstractEntity.html">AbstractEntity</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="saveNoteRevision"><span class="type-signature"></span>saveNoteRevision<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="NoteRevision.html">NoteRevision</a>|null}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1237">line 1237</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="NoteRevision.html">NoteRevision</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -8641,7 +10185,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line492">line 492</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1033">line 1033</a>
     </li></ul></dd>
     
 
@@ -8821,7 +10365,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line682">line 682</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1139">line 1139</a>
     </li></ul></dd>
     
 
@@ -8981,7 +10525,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line690">line 690</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1147">line 1147</a>
     </li></ul></dd>
     
 
@@ -9223,7 +10767,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line476">line 476</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1106">line 1106</a>
     </li></ul></dd>
     
 
@@ -9434,7 +10978,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line665">line 665</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1122">line 1122</a>
     </li></ul></dd>
     
 
@@ -9645,7 +11189,7 @@ Cache is note instance scoped.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="entities_note.js.html">entities/note.js</a>, <a href="entities_note.js.html#line674">line 674</a>
+        <a href="becca_entities_note.js.html">becca/entities/note.js</a>, <a href="becca_entities_note.js.html#line1131">line 1131</a>
     </li></ul></dd>
     
 
@@ -9691,13 +11235,13 @@ Cache is note instance scoped.
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-sql.html">sql</a></li></ul><h3>Classes</h3><ul><li><a href="ApiToken.html">ApiToken</a></li><li><a href="Attribute.html">Attribute</a></li><li><a href="BackendScriptApi.html">BackendScriptApi</a></li><li><a href="Branch.html">Branch</a></li><li><a href="Entity.html">Entity</a></li><li><a href="Note.html">Note</a></li><li><a href="NoteRevision.html">NoteRevision</a></li><li><a href="Option.html">Option</a></li><li><a href="RecentNote.html">RecentNote</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-sql.html">sql</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractEntity.html">AbstractEntity</a></li><li><a href="Attribute.html">Attribute</a></li><li><a href="BackendScriptApi.html">BackendScriptApi</a></li><li><a href="Branch.html">Branch</a></li><li><a href="EtapiToken.html">EtapiToken</a></li><li><a href="Note.html">Note</a></li><li><a href="NoteRevision.html">NoteRevision</a></li><li><a href="Option.html">Option</a></li><li><a href="RecentNote.html">RecentNote</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a>
 </footer>
 
 <script> prettyPrint(); </script>

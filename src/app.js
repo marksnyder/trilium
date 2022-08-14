@@ -3,14 +3,14 @@ const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
 const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const sessionSecret = require('./services/session_secret');
 const dataDir = require('./services/data_dir');
+const utils = require('./services/utils');
 require('./services/handlers');
-require('./services/note_cache/note_cache_loader');
+require('./becca/becca_loader');
 
 const app = express();
 
@@ -19,16 +19,23 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(helmet({
-    hidePoweredBy: false, // deactivated because electron 4.0 crashes on this right after startup
-    contentSecurityPolicy: false
+    hidePoweredBy: false, // errors out in electron
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
 }));
 
-app.use(bodyParser.text({limit: '500mb'}));
-app.use(bodyParser.json({limit: '500mb'}));
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(express.text({limit: '500mb'}));
+app.use(express.json({limit: '500mb'}));
+app.use(express.raw({limit: '500mb'}));
+app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/libraries', express.static(path.join(__dirname, '..', 'libraries')));
+// excalidraw-view mode in shared notes
+app.use('/node_modules/react/umd/react.production.min.js', express.static(path.join(__dirname, '..', 'node_modules/react/umd/react.production.min.js')));
+app.use('/node_modules/react-dom/umd/react-dom.production.min.js', express.static(path.join(__dirname, '..', 'node_modules/react-dom/umd/react-dom.production.min.js')));
+// expose whole dist folder since complete assets are needed in edit and share
+app.use('/node_modules/@excalidraw/excalidraw/dist/', express.static(path.join(__dirname, '..', 'node_modules/@excalidraw/excalidraw/dist/')));
 app.use('/images', express.static(path.join(__dirname, '..', 'images')));
 const sessionParser = session({
     secret: sessionSecret,
@@ -100,6 +107,10 @@ require('./services/backup');
 require('./services/consistency_checks');
 
 require('./services/scheduler');
+
+if (utils.isElectron()) {
+    require('@electron/remote/main').initialize();
+}
 
 module.exports = {
     app,

@@ -1,6 +1,6 @@
 "use strict";
 
-const ws = require('./ws.js');
+const ws = require('./ws');
 
 // taskId => TaskContext
 const taskContexts = {};
@@ -10,6 +10,7 @@ class TaskContext {
         this.taskId = taskId;
         this.taskType = taskType;
         this.data = data;
+        this.noteDeletionHandlerTriggered = false;
 
         // progressCount is meant to represent just some progress - to indicate the task is not stuck
         this.progressCount = -1; // we're incrementing immediatelly
@@ -22,7 +23,7 @@ class TaskContext {
         this.increaseProgressCount();
     }
 
-    /** @return {TaskContext} */
+    /** @returns {TaskContext} */
     static getInstance(taskId, taskType, data) {
         if (!taskContexts[taskId]) {
             taskContexts[taskId] = new TaskContext(taskId, taskType, data);
@@ -34,7 +35,7 @@ class TaskContext {
     increaseProgressCount() {
         this.progressCount++;
 
-        if (Date.now() - this.lastSentCountTs >= 300 && this.taskId !== 'initial-demo-import') {
+        if (Date.now() - this.lastSentCountTs >= 300 && this.taskId !== 'no-progress-reporting') {
             this.lastSentCountTs = Date.now();
 
             ws.sendMessageToAllClients({

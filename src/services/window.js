@@ -16,7 +16,10 @@ let mainWindow;
 let setupWindow;
 
 async function createExtraWindow(notePath, hoistedNoteId = 'root') {
+    const spellcheckEnabled = optionService.getOptionBool('spellCheckEnabled');
+
     const {BrowserWindow} = require('electron');
+
     const win = new BrowserWindow({
         width: 1000,
         height: 800,
@@ -25,7 +28,7 @@ async function createExtraWindow(notePath, hoistedNoteId = 'root') {
             enableRemoteModule: true,
             nodeIntegration: true,
             contextIsolation: false,
-            spellcheck: optionService.getOptionBool('spellCheckEnabled')
+            spellcheck: spellcheckEnabled
         },
         frame: optionService.getOptionBool('nativeTitleBarVisible'),
         icon: getIcon()
@@ -33,6 +36,8 @@ async function createExtraWindow(notePath, hoistedNoteId = 'root') {
 
     win.setMenuBarVisibility(false);
     win.loadURL('http://127.0.0.1:' + await port + '/?extra=1&extraHoistedNoteId=' + hoistedNoteId + '#' + notePath);
+
+    configureWebContents(win.webContents, spellcheckEnabled);
 }
 
 ipcMain.on('create-extra-window', (event, arg) => {
@@ -51,6 +56,7 @@ async function createMainWindow() {
     const spellcheckEnabled = optionService.getOptionBool('spellCheckEnabled');
 
     const {BrowserWindow} = require('electron'); // should not be statically imported
+
     mainWindow = new BrowserWindow({
         x: mainWindowState.x,
         y: mainWindowState.y,
@@ -61,7 +67,8 @@ async function createMainWindow() {
             enableRemoteModule: true,
             nodeIntegration: true,
             contextIsolation: false,
-            spellcheck: spellcheckEnabled
+            spellcheck: spellcheckEnabled,
+            webviewTag: true
         },
         frame: optionService.getOptionBool('nativeTitleBarVisible'),
         icon: getIcon()
@@ -73,7 +80,11 @@ async function createMainWindow() {
     mainWindow.loadURL('http://127.0.0.1:' + await port);
     mainWindow.on('closed', () => mainWindow = null);
 
-    const {webContents} = mainWindow;
+    configureWebContents(mainWindow.webContents, spellcheckEnabled);
+}
+
+function configureWebContents(webContents, spellcheckEnabled) {
+    require("@electron/remote/main").enable(webContents);
 
     webContents.on('new-window', (e, url) => {
         if (url !== webContents.getURL()) {
@@ -87,7 +98,8 @@ async function createMainWindow() {
         const parsedUrl = url.parse(targetUrl);
 
         // we still need to allow internal redirects from setup and migration pages
-        if (!['localhost', '127.0.0.1'].includes(parsedUrl.hostname) || (parsedUrl.path && parsedUrl.path !== '/')) {
+        if (!['localhost', '127.0.0.1'].includes(parsedUrl.hostname) || (parsedUrl.path && parsedUrl.path !== '/' && parsedUrl.path !== '/?')) {
+
             ev.preventDefault();
         }
     });
@@ -163,9 +175,15 @@ async function registerGlobalShortcuts() {
     }
 }
 
+function getMainWindow() {
+    return mainWindow;
+}
+
+
 module.exports = {
     createMainWindow,
     createSetupWindow,
     closeSetupWindow,
-    registerGlobalShortcuts
+    registerGlobalShortcuts,
+    getMainWindow
 };

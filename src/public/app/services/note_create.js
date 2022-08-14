@@ -3,7 +3,7 @@ import utils from "./utils.js";
 import protectedSessionHolder from "./protected_session_holder.js";
 import server from "./server.js";
 import ws from "./ws.js";
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 import treeService from "./tree.js";
 import toastService from "./toast.js";
 
@@ -20,52 +20,78 @@ async function createNote(parentNotePath, options = {}) {
         options.isProtected = false;
     }
 
-    if (appContext.tabManager.getActiveTabNoteType() !== 'text') {
+    if (appContext.tabManager.getActiveContextNoteType() !== 'text') {
         options.saveSelection = false;
     }
 
-    if (options.saveSelection && utils.isCKEditorInitialized()) {
-        [options.title, options.content] = parseSelectedHtml(window.cutToNote.getSelectedHtml());
+    if (options.saveSelection) {
+        [options.title, options.content] = parseSelectedHtml(options.textEditor.getSelectedHtml());
     }
-
-    const newNoteName = options.title || "new note";
 
     const parentNoteId = treeService.getNoteIdFromNotePath(parentNotePath);
 
-    const {note, branch} = await server.post(`notes/${parentNoteId}/children?target=${options.target}&targetBranchId=${options.targetBranchId}`, {
-        title: newNoteName,
+    if (options.type === 'mermaid' && !options.content) {
+        options.content = `graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;`
+    }
+
+    const {note, branch} = await server.post(`notes/${parentNoteId}/children?target=${options.target}&targetBranchId=${options.targetBranchId || ""}`, {
+        title: options.title,
         content: options.content || "",
         isProtected: options.isProtected,
         type: options.type,
-        mime: options.mime
+        mime: options.mime,
+        templateNoteId: options.templateNoteId
     });
 
-    if (options.saveSelection && utils.isCKEditorInitialized()) {
+    if (options.saveSelection) {
         // we remove the selection only after it was saved to server to make sure we don't lose anything
-        window.cutToNote.removeSelection();
+        options.textEditor.removeSelection();
     }
 
     await ws.waitForMaxKnownEntityChangeId();
 
     if (options.activate) {
-        const activeTabContext = appContext.tabManager.getActiveTabContext();
-        await activeTabContext.setNote(`${parentNotePath}/${note.noteId}`);
+        const activeNoteContext = appContext.tabManager.getActiveContext();
+        await activeNoteContext.setNote(`${parentNotePath}/${note.noteId}`);
 
         if (options.focus === 'title') {
-            appContext.triggerEvent('focusAndSelectTitle');
+            appContext.triggerEvent('focusAndSelectTitle', {isNewNote: true});
         }
         else if (options.focus === 'content') {
-            appContext.triggerEvent('focusOnDetail', {tabId: activeTabContext.tabId});
+            appContext.triggerEvent('focusOnDetail', {ntxId: activeNoteContext.ntxId});
         }
     }
 
-    const noteEntity = await treeCache.getNote(note.noteId);
-    const branchEntity = treeCache.getBranch(branch.branchId);
+    const noteEntity = await froca.getNote(note.noteId);
+    const branchEntity = froca.getBranch(branch.branchId);
 
     return {
         note: noteEntity,
         branch: branchEntity
     };
+}
+
+async function chooseNoteType() {
+    return new Promise(res => {
+        appContext.triggerCommand("chooseNoteType", {callback: res});
+    });
+}
+
+async function createNoteWithTypePrompt(parentNotePath, options = {}) {
+    const {success, noteType, templateNoteId} = await chooseNoteType();
+
+    if (!success) {
+        return;
+    }
+
+    options.type = noteType;
+    options.templateNoteId = templateNoteId;
+
+    return await createNote(parentNotePath, options);
 }
 
 /* If first element is heading, parse it out and use it as a new heading. */
@@ -90,14 +116,16 @@ async function duplicateSubtree(noteId, parentNotePath) {
 
     await ws.waitForMaxKnownEntityChangeId();
 
-    const activeTabContext = appContext.tabManager.getActiveTabContext();
-    activeTabContext.setNote(`${parentNotePath}/${note.noteId}`);
+    const activeNoteContext = appContext.tabManager.getActiveContext();
+    activeNoteContext.setNote(`${parentNotePath}/${note.noteId}`);
 
-    const origNote = await treeCache.getNote(noteId);
+    const origNote = await froca.getNote(noteId);
     toastService.showMessage(`Note "${origNote.title}" has been duplicated`);
 }
 
 export default {
     createNote,
-    duplicateSubtree
+    createNoteWithTypePrompt,
+    duplicateSubtree,
+    chooseNoteType
 };

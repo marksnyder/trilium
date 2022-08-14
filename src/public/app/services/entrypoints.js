@@ -5,7 +5,6 @@ import server from "./server.js";
 import appContext from "./app_context.js";
 import Component from "../widgets/component.js";
 import toastService from "./toast.js";
-import noteCreateService from "./note_create.js";
 import ws from "./ws.js";
 import bundleService from "./bundle.js";
 
@@ -19,54 +18,18 @@ export default class Entrypoints extends Component {
             jQuery.hotkeys.options.filterContentEditable = false;
             jQuery.hotkeys.options.filterTextInputs = false;
         }
-
-        $(document).on('click', "a[data-action='note-revision']", async event => {
-            const linkEl = $(event.target);
-            const noteId = linkEl.attr('data-note-path');
-            const noteRevisionId = linkEl.attr('data-note-revision-id');
-
-            const attributesDialog = await import("../dialogs/note_revisions.js");
-
-            attributesDialog.showNoteRevisionsDialog(noteId, noteRevisionId);
-
-            return false;
-        });
     }
 
     openDevToolsCommand() {
         if (utils.isElectron()) {
-            utils.dynamicRequire('electron').remote.getCurrentWindow().toggleDevTools();
+            utils.dynamicRequire('@electron/remote').getCurrentWindow().toggleDevTools();
         }
-    }
-
-    findInTextCommand() {
-        if (!utils.isElectron()) {
-            return;
-        }
-
-        const {remote} = utils.dynamicRequire('electron');
-        const {FindInPage} = utils.dynamicRequire('electron-find');
-        const findInPage = new FindInPage(remote.getCurrentWebContents(), {
-            offsetTop: 10,
-            offsetRight: 10,
-            boxBgColor: 'var(--main-background-color)',
-            boxShadowColor: '#000',
-            inputColor: 'var(--input-text-color)',
-            inputBgColor: 'var(--input-background-color)',
-            inputFocusColor: '#555',
-            textColor: 'var(--main-text-color)',
-            textHoverBgColor: '#555',
-            caseSelectedColor: 'var(--main-border-color)'
-        });
-
-        findInPage.openFindWindow();
     }
 
     async createNoteIntoInboxCommand() {
         const inboxNote = await dateNoteService.getInboxNote();
 
         const {note} = await server.post(`notes/${inboxNote.noteId}/children?target=into`, {
-            title: 'new note',
             content: '',
             type: 'text',
             isProtected: inboxNote.isProtected && protectedSessionHolder.isProtectedSessionAvailable()
@@ -74,39 +37,39 @@ export default class Entrypoints extends Component {
 
         await ws.waitForMaxKnownEntityChangeId();
 
-        const hoistedNoteId = appContext.tabManager.getActiveTabContext()
-            ? appContext.tabManager.getActiveTabContext().hoistedNoteId
+        const hoistedNoteId = appContext.tabManager.getActiveContext()
+            ? appContext.tabManager.getActiveContext().hoistedNoteId
             : 'root';
 
-        await appContext.tabManager.openTabWithNote(note.noteId, true, null, hoistedNoteId);
+        await appContext.tabManager.openContextWithNote(note.noteId, true, null, hoistedNoteId);
 
-        appContext.triggerEvent('focusAndSelectTitle');
+        appContext.triggerEvent('focusAndSelectTitle', {isNewNote: true});
     }
 
     async toggleNoteHoistingCommand() {
-        const tabContext = appContext.tabManager.getActiveTabContext();
+        const noteContext = appContext.tabManager.getActiveContext();
 
-        if (tabContext.note.noteId === tabContext.hoistedNoteId) {
-            await tabContext.unhoist();
+        if (noteContext.note.noteId === noteContext.hoistedNoteId) {
+            await noteContext.unhoist();
         }
-        else if (tabContext.note.type !== 'search') {
-            await tabContext.setHoistedNoteId(tabContext.note.noteId);
+        else if (noteContext.note.type !== 'search') {
+            await noteContext.setHoistedNoteId(noteContext.note.noteId);
         }
     }
 
     async hoistNoteCommand({noteId}) {
-        const tabContext = appContext.tabManager.getActiveTabContext();
+        const noteContext = appContext.tabManager.getActiveContext();
 
-        if (tabContext.hoistedNoteId !== noteId) {
-            await tabContext.setHoistedNoteId(noteId);
+        if (noteContext.hoistedNoteId !== noteId) {
+            await noteContext.setHoistedNoteId(noteId);
         }
     }
 
     async unhoistCommand() {
-        const activeTabContext = appContext.tabManager.getActiveTabContext();
+        const activeNoteContext = appContext.tabManager.getActiveContext();
 
-        if (activeTabContext) {
-            activeTabContext.unhoist();
+        if (activeNoteContext) {
+            activeNoteContext.unhoist();
         }
     }
 
@@ -116,7 +79,7 @@ export default class Entrypoints extends Component {
 
     toggleFullscreenCommand() {
         if (utils.isElectron()) {
-            const win = utils.dynamicRequire('electron').remote.getCurrentWindow();
+            const win = utils.dynamicRequire('@electron/remote').getCurrentWindow();
 
             if (win.isFullScreenable()) {
                 win.setFullScreen(!win.isFullScreen());
@@ -128,22 +91,8 @@ export default class Entrypoints extends Component {
         }
     }
 
-    toggleZenModeCommand() {
-        if (!this.zenModeActive) {
-            $(".hide-in-zen-mode,.gutter").addClass("hidden-by-zen-mode");
-            $("#root-widget").addClass("zen-mode");
-            this.zenModeActive = true;
-        }
-        else {
-            // not hiding / showing explicitly since element might be hidden also for other reasons
-            $(".hide-in-zen-mode,.gutter").removeClass("hidden-by-zen-mode");
-            $("#root-widget").removeClass("zen-mode");
-            this.zenModeActive = false;
-        }
-    }
-
     reloadFrontendAppCommand() {
-        utils.reloadApp();
+        utils.reloadFrontendApp();
     }
 
     logoutCommand() {
@@ -157,7 +106,7 @@ export default class Entrypoints extends Component {
     backInNoteHistoryCommand() {
         if (utils.isElectron()) {
             // standard JS version does not work completely correctly in electron
-            const webContents = utils.dynamicRequire('electron').remote.getCurrentWebContents();
+            const webContents = utils.dynamicRequire('@electron/remote').getCurrentWebContents();
             const activeIndex = parseInt(webContents.getActiveIndex());
 
             webContents.goToIndex(activeIndex - 1);
@@ -170,7 +119,7 @@ export default class Entrypoints extends Component {
     forwardInNoteHistoryCommand() {
         if (utils.isElectron()) {
             // standard JS version does not work completely correctly in electron
-            const webContents = utils.dynamicRequire('electron').remote.getCurrentWebContents();
+            const webContents = utils.dynamicRequire('@electron/remote').getCurrentWebContents();
             const activeIndex = parseInt(webContents.getActiveIndex());
 
             webContents.goToIndex(activeIndex + 1);
@@ -183,7 +132,13 @@ export default class Entrypoints extends Component {
     async switchToDesktopVersionCommand() {
         utils.setCookie('trilium-device', 'desktop');
 
-        utils.reloadApp();
+        utils.reloadFrontendApp("Switching to desktop version");
+    }
+
+    async switchToMobileVersionCommand() {
+        utils.setCookie('trilium-device', 'mobile');
+
+        utils.reloadFrontendApp("Switching to mobile version");
     }
 
     async openInWindowCommand({notePath, hoistedNoteId}) {
@@ -208,8 +163,7 @@ export default class Entrypoints extends Component {
     }
 
     async runActiveNoteCommand() {
-        const tabContext = appContext.tabManager.getActiveTabContext();
-        const note = tabContext.note;
+        const {ntxId, note} = appContext.tabManager.getActiveContext();
 
         // ctrl+enter is also used elsewhere so make sure we're running only when appropriate
         if (!note || note.type !== 'code') {
@@ -222,9 +176,13 @@ export default class Entrypoints extends Component {
         } else if (note.mime.endsWith("env=backend")) {
             await server.post('script/run/' + note.noteId);
         } else if (note.mime === 'text/x-sqlite;schema=trilium') {
-            const result = await server.post("sql/execute/" + note.noteId);
+            const resp = await server.post("sql/execute/" + note.noteId);
 
-            this.triggerEvent('sqlQueryResults', {tabId: tabContext.tabId, results: result.results});
+            if (!resp.success) {
+                alert("Error occurred while executing SQL query: " + resp.message);
+            }
+
+            await appContext.triggerEvent('sqlQueryResults', {ntxId: ntxId, results: resp.results});
         }
 
         toastService.showMessage("Note executed");
@@ -234,11 +192,11 @@ export default class Entrypoints extends Component {
         $(".tooltip").removeClass("show");
     }
 
-    tabNoteSwitchedEvent() {
+    noteSwitchedEvent() {
         this.hideAllTooltips();
     }
 
-    activeTabChangedEvent() {
+    activeContextChangedEvent() {
         this.hideAllTooltips();
     }
 }

@@ -27,8 +27,15 @@ cp images/app-icons/png/128x128.png $BUILD_DIR/icon.png
 # removing software WebGL binaries because they are pretty huge and not necessary
 rm -r $BUILD_DIR/swiftshader
 
+cp bin/tpl/anonymize-database.sql $BUILD_DIR/
+
+cp -r dump-db $BUILD_DIR/
+
 cp bin/tpl/trilium-portable.sh $BUILD_DIR/
 chmod 755 $BUILD_DIR/trilium-portable.sh
+
+cp bin/tpl/trilium-safe-mode.sh $BUILD_DIR/
+chmod 755 $BUILD_DIR/trilium-safe-mode.sh
 
 cp bin/tpl/trilium-no-cert-check.sh $BUILD_DIR/
 chmod 755 $BUILD_DIR/trilium-no-cert-check.sh

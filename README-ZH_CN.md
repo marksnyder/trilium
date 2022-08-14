@@ -1,4 +1,4 @@
-# Trilium注意事项
+# Trilium笔记
 
 [English](https://github.com/zadam/trilium/blob/master/README.md) | [Chinese](https://github.com/zadam/trilium/blob/master/README-ZH_CN.md) | [Russian](https://github.com/zadam/trilium/blob/master/README.ru.md)
 
@@ -6,6 +6,10 @@
 Trilium Notes是一个分层的笔记应用程序，专注于建立大型个人知识库。请参阅[屏幕截图](https://github.com/zadam/trilium/wiki/Screenshot-tour)以快速了解：
 
 ![](https://raw.githubusercontent.com/wiki/zadam/trilium/images/screenshot.png)
+
+Ukraine is currently suffering from Russian aggression, please consider donating to [one of these charities](https://old.reddit.com/r/ukraine/comments/s6g5un/want_to_support_ukraine_heres_a_list_of_charities/).
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Ukraine.svg" alt="drawing" width="600"/>
 
 ## 特性
 
@@ -36,6 +40,8 @@ Trilium是作为桌面应用程序（Linux和Windows）或服务器上托管的W
 ## 文档
 
 [有关文档页面的完整列表，请参见Wiki。](https://github.com/zadam/trilium/wiki/)
+
+[中文Wiki在这里](https://github.com/baddate/trilium/wiki/)
 
 您还可以阅读[个人知识库模式](https://github.com/zadam/trilium/wiki/Patterns-of-personal-knowledge-base)，以获取有关如何使用Trilium的灵感。
 

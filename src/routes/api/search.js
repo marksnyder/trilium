@@ -1,20 +1,22 @@
 "use strict";
 
-const repository = require('../../services/repository');
-const SearchContext = require('../../services/search/search_context.js');
+const becca = require('../../becca/becca');
+const SearchContext = require('../../services/search/search_context');
 const log = require('../../services/log');
 const scriptService = require('../../services/script');
 const searchService = require('../../services/search/services/search');
-const noteRevisionService = require("../../services/note_revisions.js");
+const bulkActionService = require("../../services/bulk_actions");
+const {formatAttrForSearch} = require("../../services/attribute_formatter");
 
-async function searchFromNoteInt(note) {
-    let searchResultNoteIds;
+function searchFromNoteInt(note) {
+    let searchResultNoteIds, highlightedTokens;
 
     const searchScript = note.getRelationValue('searchScript');
     const searchString = note.getLabelValue('searchString');
 
     if (searchScript) {
-        searchResultNoteIds = await searchFromRelation(note, 'searchScript');
+        searchResultNoteIds = searchFromRelation(note, 'searchScript');
+        highlightedTokens = [];
     } else {
         const searchContext = new SearchContext({
             fastSearch: note.hasLabel('fastSearch'),
@@ -28,17 +30,41 @@ async function searchFromNoteInt(note) {
             fuzzyAttributeSearch: false
         });
 
-        searchResultNoteIds = searchService.findNotesWithQuery(searchString, searchContext)
+        searchResultNoteIds = searchService.findResultsWithQuery(searchString, searchContext)
             .map(sr => sr.noteId);
+
+        highlightedTokens = searchContext.highlightedTokens;
     }
 
     // we won't return search note's own noteId
     // also don't allow root since that would force infinite cycle
-    return searchResultNoteIds.filter(resultNoteId => !['root', note.noteId].includes(resultNoteId));
+    return {
+        searchResultNoteIds: searchResultNoteIds.filter(resultNoteId => !['root', note.noteId].includes(resultNoteId)),
+        highlightedTokens
+    };
 }
 
-async function searchFromNote(req) {
-    const note = repository.getNote(req.params.noteId);
+function searchFromNote(req) {
+    const note = becca.getNote(req.params.noteId);
+
+    if (!note) {
+        return [404, `Note ${req.params.noteId} has not been found.`];
+    }
+
+    if (note.isDeleted) {
+        // this can be triggered from recent changes, and it's harmless to return empty list rather than fail
+        return [];
+    }
+
+    if (note.type !== 'search') {
+        return [400, `Note ${req.params.noteId} is not a search note.`]
+    }
+
+    return searchFromNoteInt(note);
+}
+
+function searchAndExecute(req) {
+    const note = becca.getNote(req.params.noteId);
 
     if (!note) {
         return [404, `Note ${req.params.noteId} has not been found.`];
@@ -53,123 +79,12 @@ async function searchFromNote(req) {
         return [400, `Note ${req.params.noteId} is not a search note.`]
     }
 
-    return await searchFromNoteInt(note);
+    const {searchResultNoteIds} = searchFromNoteInt(note);
+
+    bulkActionService.executeActions(note, searchResultNoteIds);
 }
 
-const ACTION_HANDLERS = {
-    deleteNote: (action, note) => {
-        note.isDeleted = true;
-        note.save();
-    },
-    deleteNoteRevisions: (action, note) => {
-        noteRevisionService.eraseNoteRevisions(note.getRevisions().map(rev => rev.noteRevisionId));
-    },
-    deleteLabel: (action, note) => {
-        for (const label of note.getOwnedLabels(action.labelName)) {
-            label.isDeleted = true;
-            label.save();
-        }
-    },
-    deleteRelation: (action, note) => {
-        for (const relation of note.getOwnedRelations(action.relationName)) {
-            relation.isDeleted = true;
-            relation.save();
-        }
-    },
-    renameLabel: (action, note) => {
-        for (const label of note.getOwnedLabels(action.oldLabelName)) {
-            label.name = action.newLabelName;
-            label.save();
-        }
-    },
-    renameRelation: (action, note) => {
-        for (const relation of note.getOwnedRelations(action.oldRelationName)) {
-            relation.name = action.newRelationName;
-            relation.save();
-        }
-    },
-    setLabelValue: (action, note) => {
-        note.setLabel(action.labelName, action.labelValue);
-    },
-    setRelationTarget: (action, note) => {
-        note.setRelation(action.relationName, action.targetNoteId);
-    },
-    executeScript: (action, note) => {
-        if (!action.script || !action.script.trim()) {
-            log.info("Ignoring executeScript since the script is empty.")
-            return;
-        }
-
-        const scriptFunc = new Function("note", action.script);
-        scriptFunc(note);
-
-        note.save();
-    }
-};
-
-function getActions(note) {
-    return note.getLabels('action')
-        .map(actionLabel => {
-            let action;
-
-            try {
-                action = JSON.parse(actionLabel.value);
-            } catch (e) {
-                log.error(`Cannot parse '${actionLabel.value}' into search action, skipping.`);
-                return null;
-            }
-
-            if (!(action.name in ACTION_HANDLERS)) {
-                log.error(`Cannot find '${action.name}' search action handler, skipping.`);
-                return null;
-            }
-
-            return action;
-        })
-        .filter(a => !!a);
-}
-
-async function searchAndExecute(req) {
-    const note = repository.getNote(req.params.noteId);
-
-    if (!note) {
-        return [404, `Note ${req.params.noteId} has not been found.`];
-    }
-
-    if (note.isDeleted) {
-        // this can be triggered from recent changes and it's harmless to return empty list rather than fail
-        return [];
-    }
-
-    if (note.type !== 'search') {
-        return [400, `Note ${req.params.noteId} is not a search note.`]
-    }
-
-    const searchResultNoteIds = await searchFromNoteInt(note);
-
-    const actions = getActions(note);
-
-    for (const resultNoteId of searchResultNoteIds) {
-        const resultNote = repository.getNote(resultNoteId);
-
-        if (!resultNote || resultNote.isDeleted) {
-            continue;
-        }
-
-        for (const action of actions) {
-            try {
-                log.info(`Applying action handler to note ${resultNote.noteId}: ${JSON.stringify(action)}`);
-
-                ACTION_HANDLERS[action.name](action, resultNote);
-            }
-            catch (e) {
-                log.error(`ExecuteScript search action failed with ${e.message}`);
-            }
-        }
-    }
-}
-
-async function searchFromRelation(note, relationName) {
+function searchFromRelation(note, relationName) {
     const scriptNote = note.getRelationTarget(relationName);
 
     if (!scriptNote) {
@@ -184,13 +99,13 @@ async function searchFromRelation(note, relationName) {
         return [];
     }
 
-    if (!note.isContentAvailable) {
+    if (!note.isContentAvailable()) {
         log.info(`Note ${scriptNote.noteId} is not available outside of protected session.`);
 
         return [];
     }
 
-    const result = await scriptService.executeNote(scriptNote, { originEntity: note });
+    const result = scriptService.executeNote(scriptNote, { originEntity: note });
 
     if (!Array.isArray(result)) {
         log.info(`Result from ${scriptNote.noteId} is not an array.`);
@@ -215,7 +130,7 @@ function quickSearch(req) {
         fuzzyAttributeSearch: false
     });
 
-    return searchService.findNotesWithQuery(searchString, searchContext)
+    return searchService.findResultsWithQuery(searchString, searchContext)
         .map(sr => sr.noteId);
 }
 
@@ -229,7 +144,7 @@ function search(req) {
         ignoreHoistedNote: true
     });
 
-    return searchService.findNotesWithQuery(searchString, searchContext)
+    return searchService.findResultsWithQuery(searchString, searchContext)
         .map(sr => sr.noteId);
 }
 
@@ -242,12 +157,18 @@ function getRelatedNotes(req) {
         fuzzyAttributeSearch: false
     };
 
-    const matchingNameAndValue = searchService.findNotesWithQuery(formatAttrForSearch(attr, true), new SearchContext(searchSettings));
-    const matchingName = searchService.findNotesWithQuery(formatAttrForSearch(attr, false), new SearchContext(searchSettings));
+    const matchingNameAndValue = searchService.findResultsWithQuery(formatAttrForSearch(attr, true), new SearchContext(searchSettings));
+    const matchingName = searchService.findResultsWithQuery(formatAttrForSearch(attr, false), new SearchContext(searchSettings));
 
     const results = [];
 
     const allResults = matchingNameAndValue.concat(matchingName);
+
+    const allResultNoteIds = new Set();
+
+    for (const record of allResults) {
+        allResultNoteIds.add(record.noteId);
+    }
 
     for (const record of allResults) {
         if (results.length >= 20) {
@@ -262,54 +183,18 @@ function getRelatedNotes(req) {
     }
 
     return {
-        count: allResults.length,
+        count: allResultNoteIds.size,
         results
     };
 }
 
-function formatAttrForSearch(attr, searchWithValue) {
-    let searchStr = '';
+function searchTemplates() {
+    const query = formatAttrForSearch({type: 'label', name: "template"}, false);
 
-    if (attr.type === 'label') {
-        searchStr += '#';
-    }
-    else if (attr.type === 'relation') {
-        searchStr += '~';
-    }
-    else {
-        throw new Error(`Unrecognized attribute type ${JSON.stringify(attr)}`);
-    }
-
-    searchStr += attr.name;
-
-    if (searchWithValue && attr.value) {
-        if (attr.type === 'relation') {
-            searchStr += ".noteId";
-        }
-
-        searchStr += '=';
-        searchStr += formatValue(attr.value);
-    }
-
-    return searchStr;
-}
-
-function formatValue(val) {
-    if (!/[^\w_-]/.test(val)) {
-        return val;
-    }
-    else if (!val.includes('"')) {
-        return '"' + val + '"';
-    }
-    else if (!val.includes("'")) {
-        return "'" + val + "'";
-    }
-    else if (!val.includes("`")) {
-        return "`" + val + "`";
-    }
-    else {
-        return '"' + val.replace(/"/g, '\\"') + '"';
-    }
+    return searchService.searchNotes(query, {
+        includeArchivedNotes: true,
+        ignoreHoistedNote: false
+    }).map(note => note.noteId);
 }
 
 module.exports = {
@@ -317,5 +202,6 @@ module.exports = {
     searchAndExecute,
     getRelatedNotes,
     quickSearch,
-    search
+    search,
+    searchTemplates
 };

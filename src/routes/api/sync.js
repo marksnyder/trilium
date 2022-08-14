@@ -2,7 +2,7 @@
 
 const syncService = require('../../services/sync');
 const syncUpdateService = require('../../services/sync_update');
-const entityChangesService = require('../../services/entity_changes.js');
+const entityChangesService = require('../../services/entity_changes');
 const sql = require('../../services/sql');
 const sqlInit = require('../../services/sql_init');
 const optionService = require('../../services/options');
@@ -10,8 +10,8 @@ const contentHashService = require('../../services/content_hash');
 const log = require('../../services/log');
 const syncOptions = require('../../services/sync_options');
 const dateUtils = require('../../services/date_utils');
-const entityConstructor = require('../../entities/entity_constructor');
 const utils = require('../../services/utils');
+const ws = require('../../services/ws');
 
 async function testSync() {
     try {
@@ -42,7 +42,7 @@ function getStats() {
     }
 
     const stats = {
-        initialized: optionService.getOption('initialized') === 'true',
+        initialized: sql.getValue("SELECT value FROM options WHERE name = 'initialized'") === 'true',
         outstandingPullCount: syncService.getOutstandingPullCount()
     };
 
@@ -60,6 +60,9 @@ function checkSync() {
 
 function syncNow() {
     log.info("Received request to trigger sync now.");
+
+    // when explicitly asked for set in progress status immediatelly for faster user feedback
+    ws.syncPullInProgress();
 
     return syncService.sync();
 }
@@ -111,8 +114,6 @@ function forceNoteSync(req) {
         entityChangesService.moveEntityChangeToTop('note_revision_contents', noteRevisionId);
     }
 
-    entityChangesService.moveEntityChangeToTop('recent_changes', noteId);
-
     log.info("Forcing note sync for " + noteId);
 
     // not awaiting for the job to finish (will probably take a long time)
@@ -122,13 +123,45 @@ function forceNoteSync(req) {
 function getChanged(req) {
     const startTime = Date.now();
 
-    const lastEntityChangeId = parseInt(req.query.lastEntityChangeId);
+    let lastEntityChangeId = parseInt(req.query.lastEntityChangeId);
+    const clientinstanceId = req.query.instanceId;
+    let filteredEntityChanges = [];
 
-    const entityChanges = sql.getRows("SELECT * FROM entity_changes WHERE isSynced = 1 AND id > ? LIMIT 1000", [lastEntityChangeId]);
+    while (filteredEntityChanges.length === 0) {
+        const entityChanges = sql.getRows(`
+            SELECT *
+            FROM entity_changes
+            WHERE isSynced = 1
+              AND id > ?
+            ORDER BY id
+            LIMIT 1000`, [lastEntityChangeId]);
+
+        if (entityChanges.length === 0) {
+            break;
+        }
+
+        filteredEntityChanges = entityChanges.filter(ec => ec.instanceId !== clientinstanceId);
+
+        if (filteredEntityChanges.length === 0) {
+            lastEntityChangeId = entityChanges[entityChanges.length - 1].id;
+        }
+    }
+
+    const entityChangeRecords = syncService.getEntityChangeRecords(filteredEntityChanges);
+
+    if (entityChangeRecords.length > 0) {
+        lastEntityChangeId = entityChangeRecords[entityChangeRecords.length - 1].entityChange.id;
+    }
 
     const ret = {
-        entityChanges: syncService.getEntityChangesRecords(entityChanges),
-        maxEntityChangeId: sql.getValue('SELECT COALESCE(MAX(id), 0) FROM entity_changes WHERE isSynced = 1')
+        entityChanges: entityChangeRecords,
+        lastEntityChangeId,
+        outstandingPullCount: sql.getValue(`
+            SELECT COUNT(id) 
+            FROM entity_changes 
+            WHERE isSynced = 1 
+              AND instanceId != ?
+              AND id > ?`, [clientinstanceId, lastEntityChangeId])
     };
 
     if (ret.entityChanges.length > 0) {
@@ -173,10 +206,10 @@ function update(req) {
         }
     }
 
-    const {sourceId, entities} = body;
+    const {entities, instanceId} = body;
 
     for (const {entityChange, entity} of entities) {
-        syncUpdateService.updateEntity(entityChange, entity, sourceId);
+        syncUpdateService.updateEntity(entityChange, entity, instanceId);
     }
 }
 
@@ -203,6 +236,11 @@ function queueSector(req) {
     entityChangesService.addEntityChangesForSector(entityName, sector);
 }
 
+function checkEntityChanges() {
+    const consistencyChecks = require("../../services/consistency_checks");
+    consistencyChecks.runEntityChangesChecks();
+}
+
 module.exports = {
     testSync,
     checkSync,
@@ -214,5 +252,6 @@ module.exports = {
     update,
     getStats,
     syncFinished,
-    queueSector
+    queueSector,
+    checkEntityChanges
 };

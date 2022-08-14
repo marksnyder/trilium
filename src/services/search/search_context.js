@@ -18,10 +18,11 @@ class SearchContext {
         this.orderDirection = params.orderDirection;
         this.limit = params.limit;
         this.debug = params.debug;
+        this.debugInfo = null;
         this.fuzzyAttributeSearch = !!params.fuzzyAttributeSearch;
         this.highlightedTokens = [];
         this.originalQuery = "";
-        // if true, note cache does not have (up-to-date) information needed to process the query
+        // if true, becca does not have (up-to-date) information needed to process the query
         // and some extra data needs to be loaded before executing
         this.dbLoadNeeded = false;
         this.error = null;

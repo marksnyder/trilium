@@ -1,11 +1,14 @@
 "use strict";
 
 const noteService = require('./notes');
+const becca = require('../becca/becca');
 const attributeService = require('./attributes');
 const dateUtils = require('./date_utils');
-const repository = require('./repository');
 const sql = require('./sql');
 const protectedSessionService = require('./protected_session');
+const cls = require("./cls");
+const searchService = require('../services/search/services/search');
+const SearchContext = require('../services/search/search_context');
 
 const CALENDAR_ROOT_LABEL = 'calendarRoot';
 const YEAR_LABEL = 'yearNote';
@@ -25,17 +28,17 @@ function createNote(parentNote, noteTitle) {
     }).note;
 }
 
-function getNoteStartingWith(parentNoteId, startsWith) {
-    return repository.getEntity(`SELECT notes.* FROM notes JOIN branches USING(noteId) 
-                                    WHERE parentNoteId = ? AND title LIKE '${startsWith}%'
-                                    AND notes.isDeleted = 0 AND isProtected = 0 
-                                    AND branches.isDeleted = 0`, [parentNoteId]);
-}
-
-/** @return {Note} */
+/** @returns {Note} */
 function getRootCalendarNote() {
-    // some caching here could be useful (e.g. in CLS)
-    let rootNote = attributeService.getNoteWithLabel(CALENDAR_ROOT_LABEL);
+    let rootNote;
+
+    if (cls.getHoistedNoteId() !== 'root') {
+        rootNote = searchService.findFirstNoteWithQuery('#workspaceCalendarRoot', new SearchContext({ignoreHoistedNote: false}));
+    }
+
+    if (!rootNote) {
+        rootNote = attributeService.getNoteWithLabel(CALENDAR_ROOT_LABEL);
+    }
 
     if (!rootNote) {
         sql.transactional(() => {
@@ -56,34 +59,33 @@ function getRootCalendarNote() {
     return rootNote;
 }
 
-/** @return {Note} */
-function getYearNote(dateStr, rootNote) {
+/** @returns {Note} */
+function getYearNote(dateStr, rootNote = null) {
     if (!rootNote) {
         rootNote = getRootCalendarNote();
     }
 
-    const yearStr = dateStr.substr(0, 4);
+    const yearStr = dateStr.trim().substr(0, 4);
 
-    let yearNote = attributeService.getNoteWithLabel(YEAR_LABEL, yearStr);
+    let yearNote = searchService.findFirstNoteWithQuery(`#${YEAR_LABEL}="${yearStr}"`,
+            new SearchContext({ancestorNoteId: rootNote.noteId}));
 
-    if (!yearNote) {
-        yearNote = getNoteStartingWith(rootNote.noteId, yearStr);
-
-        if (!yearNote) {
-            sql.transactional(() => {
-                yearNote = createNote(rootNote, yearStr);
-
-                attributeService.createLabel(yearNote.noteId, YEAR_LABEL, yearStr);
-                attributeService.createLabel(yearNote.noteId, 'sorted');
-
-                const yearTemplateAttr = rootNote.getOwnedAttribute('relation', 'yearTemplate');
-
-                if (yearTemplateAttr) {
-                    attributeService.createRelation(yearNote.noteId, 'template', yearTemplateAttr.value);
-                }
-            });
-        }
+    if (yearNote) {
+        return yearNote;
     }
+
+    sql.transactional(() => {
+        yearNote = createNote(rootNote, yearStr);
+
+        attributeService.createLabel(yearNote.noteId, YEAR_LABEL, yearStr);
+        attributeService.createLabel(yearNote.noteId, 'sorted');
+
+        const yearTemplateAttr = rootNote.getOwnedAttribute('relation', 'yearTemplate');
+
+        if (yearTemplateAttr) {
+            attributeService.createRelation(yearNote.noteId, 'template', yearTemplateAttr.value);
+        }
+    });
 
     return yearNote;
 }
@@ -97,8 +99,8 @@ function getMonthNoteTitle(rootNote, monthNumber, dateObj) {
         .replace(/{month}/g, monthName);
 }
 
-/** @return {Note} */
-function getMonthNote(dateStr, rootNote) {
+/** @returns {Note} */
+function getMonthNote(dateStr, rootNote = null) {
     if (!rootNote) {
         rootNote = getRootCalendarNote();
     }
@@ -106,84 +108,83 @@ function getMonthNote(dateStr, rootNote) {
     const monthStr = dateStr.substr(0, 7);
     const monthNumber = dateStr.substr(5, 2);
 
-    let monthNote = attributeService.getNoteWithLabel(MONTH_LABEL, monthStr);
+    let monthNote = searchService.findFirstNoteWithQuery(`#${MONTH_LABEL}="${monthStr}"`,
+        new SearchContext({ancestorNoteId: rootNote.noteId}));
 
-    if (!monthNote) {
-        const yearNote = getYearNote(dateStr, rootNote);
-
-        monthNote = getNoteStartingWith(yearNote.noteId, monthNumber);
-
-        if (!monthNote) {
-            const dateObj = dateUtils.parseLocalDate(dateStr);
-
-            const noteTitle = getMonthNoteTitle(rootNote, monthNumber, dateObj);
-
-            sql.transactional(() => {
-                monthNote = createNote(yearNote, noteTitle);
-
-                attributeService.createLabel(monthNote.noteId, MONTH_LABEL, monthStr);
-                attributeService.createLabel(monthNote.noteId, 'sorted');
-
-                const monthTemplateAttr = rootNote.getOwnedAttribute('relation', 'monthTemplate');
-
-                if (monthTemplateAttr) {
-                    attributeService.createRelation(monthNote.noteId, 'template', monthTemplateAttr.value);
-                }
-            });
-        }
+    if (monthNote) {
+        return monthNote;
     }
+
+    const dateObj = dateUtils.parseLocalDate(dateStr);
+
+    const noteTitle = getMonthNoteTitle(rootNote, monthNumber, dateObj);
+
+    const yearNote = getYearNote(dateStr, rootNote);
+
+    sql.transactional(() => {
+        monthNote = createNote(yearNote, noteTitle);
+
+        attributeService.createLabel(monthNote.noteId, MONTH_LABEL, monthStr);
+        attributeService.createLabel(monthNote.noteId, 'sorted');
+
+        const monthTemplateAttr = rootNote.getOwnedAttribute('relation', 'monthTemplate');
+
+        if (monthTemplateAttr) {
+            attributeService.createRelation(monthNote.noteId, 'template', monthTemplateAttr.value);
+        }
+    });
 
     return monthNote;
 }
 
-function getDateNoteTitle(rootNote, dayNumber, dateObj) {
+function getDayNoteTitle(rootNote, dayNumber, dateObj) {
     const pattern = rootNote.getOwnedLabelValue("datePattern") || "{dayInMonthPadded} - {weekDay}";
     const weekDay = DAYS[dateObj.getDay()];
 
     return pattern
         .replace(/{dayInMonthPadded}/g, dayNumber)
-        .replace(/{isoDate}/g, dateUtils.localNowDate())
+        .replace(/{isoDate}/g, dateUtils.utcDateStr(dateObj))
         .replace(/{weekDay}/g, weekDay)
         .replace(/{weekDay3}/g, weekDay.substr(0, 3))
         .replace(/{weekDay2}/g, weekDay.substr(0, 2));
 }
 
-/** @return {Note} */
-function getDateNote(dateStr) {
+/** @returns {Note} */
+function getDayNote(dateStr) {
     const rootNote = getRootCalendarNote();
+    dateStr = dateStr.trim().substr(0, 10);
 
-    let dateNote = attributeService.getNoteWithLabel(DATE_LABEL, dateStr);
+    let dateNote = searchService.findFirstNoteWithQuery(`#${DATE_LABEL}="${dateStr}"`,
+        new SearchContext({ancestorNoteId: rootNote.noteId}));
 
-    if (!dateNote) {
-        const monthNote = getMonthNote(dateStr, rootNote);
-        const dayNumber = dateStr.substr(8, 2);
-
-        dateNote = getNoteStartingWith(monthNote.noteId, dayNumber);
-
-        if (!dateNote) {
-            const dateObj = dateUtils.parseLocalDate(dateStr);
-
-            const noteTitle = getDateNoteTitle(rootNote, dayNumber, dateObj);
-
-            sql.transactional(() => {
-                dateNote = createNote(monthNote, noteTitle);
-
-                attributeService.createLabel(dateNote.noteId, DATE_LABEL, dateStr.substr(0, 10));
-
-                const dateTemplateAttr = rootNote.getOwnedAttribute('relation', 'dateTemplate');
-
-                if (dateTemplateAttr) {
-                    attributeService.createRelation(dateNote.noteId, 'template', dateTemplateAttr.value);
-                }
-            });
-        }
+    if (dateNote) {
+        return dateNote;
     }
+
+    const monthNote = getMonthNote(dateStr, rootNote);
+    const dayNumber = dateStr.substr(8, 2);
+
+    const dateObj = dateUtils.parseLocalDate(dateStr);
+
+    const noteTitle = getDayNoteTitle(rootNote, dayNumber, dateObj);
+
+    sql.transactional(() => {
+        dateNote = createNote(monthNote, noteTitle);
+
+        attributeService.createLabel(dateNote.noteId, DATE_LABEL, dateStr.substr(0, 10));
+
+        const dateTemplateAttr = rootNote.getOwnedAttribute('relation', 'dateTemplate');
+
+        if (dateTemplateAttr) {
+            attributeService.createRelation(dateNote.noteId, 'template', dateTemplateAttr.value);
+        }
+    });
 
     return dateNote;
 }
 
 function getTodayNote() {
-    return getDateNote(dateUtils.localNowDate());
+    return getDayNote(dateUtils.localNowDate());
 }
 
 function getStartOfTheWeek(date, startOfTheWeek) {
@@ -208,9 +209,9 @@ function getWeekNote(dateStr, options = {}) {
 
     const dateObj = getStartOfTheWeek(dateUtils.parseLocalDate(dateStr), startOfTheWeek);
 
-    dateStr = dateUtils.utcDateStr(dateObj);
+    dateStr = dateUtils.utcDateTimeStr(dateObj);
 
-    return getDateNote(dateStr);
+    return getDayNote(dateStr);
 }
 
 module.exports = {
@@ -218,6 +219,6 @@ module.exports = {
     getYearNote,
     getMonthNote,
     getWeekNote,
-    getDateNote,
+    getDayNote,
     getTodayNote
 };

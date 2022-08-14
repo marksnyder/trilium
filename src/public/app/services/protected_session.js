@@ -3,8 +3,9 @@ import protectedSessionHolder from './protected_session_holder.js';
 import toastService from "./toast.js";
 import ws from "./ws.js";
 import appContext from "./app_context.js";
-import treeCache from "./tree_cache.js";
+import froca from "./froca.js";
 import utils from "./utils.js";
+import options from "./options.js";
 
 let protectedSessionDeferred = null;
 
@@ -18,6 +19,11 @@ async function leaveProtectedSession() {
 function enterProtectedSession() {
     const dfd = $.Deferred();
 
+    if (!options.is("isPasswordSet")) {
+        appContext.triggerCommand("showPasswordNotSet");
+        return dfd;
+    }
+
     if (protectedSessionHolder.isProtectedSessionAvailable()) {
         dfd.resolve(false);
     }
@@ -25,19 +31,19 @@ function enterProtectedSession() {
         // using deferred instead of promise because it allows resolving from outside
         protectedSessionDeferred = dfd;
 
-        import("../dialogs/protected_session.js").then(dialog => dialog.show());
+        appContext.triggerCommand("showProtectedSessionPasswordDialog");
     }
 
     return dfd.promise();
 }
 
 async function reloadData() {
-    const allNoteIds = Object.keys(treeCache.notes);
+    const allNoteIds = Object.keys(froca.notes);
 
-    await treeCache.loadInitialTree();
+    await froca.loadInitialTree();
 
     // make sure that all notes used in the application are loaded, including the ones not shown in the tree
-    await treeCache.reloadNotes(allNoteIds, true);
+    await froca.reloadNotes(allNoteIds, true);
 }
 
 async function setupProtectedSession(password) {
@@ -55,13 +61,13 @@ ws.subscribeToMessages(async message => {
     if (message.type === 'protectedSessionLogin') {
         await reloadData();
 
-        await appContext.triggerEvent('treeCacheReloaded');
+        await appContext.triggerEvent('frocaReloaded');
 
         appContext.triggerEvent('protectedSessionStarted');
 
-        if (protectedSessionDeferred !== null) {
-            import("../dialogs/protected_session.js").then(dialog => dialog.close());
+        appContext.triggerCommand("closeProtectedSessionPasswordDialog");
 
+        if (protectedSessionDeferred !== null) {
             protectedSessionDeferred.resolve(true);
             protectedSessionDeferred = null;
         }
@@ -69,7 +75,7 @@ ws.subscribeToMessages(async message => {
         toastService.showMessage("Protected session has been started.");
     }
     else if (message.type === 'protectedSessionLogout') {
-        utils.reloadApp();
+        utils.reloadFrontendApp(`Protected session logout`);
     }
 });
 

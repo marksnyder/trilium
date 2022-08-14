@@ -2,10 +2,9 @@
 
 const log = require('./log');
 const sql = require('./sql');
-const sqlInit = require('./sql_init');
 const optionService = require('./options');
 const utils = require('./utils');
-const sourceIdService = require('./source_id');
+const instanceId = require('./member_id');
 const dateUtils = require('./date_utils');
 const syncUpdateService = require('./sync_update');
 const contentHashService = require('./content_hash');
@@ -15,8 +14,9 @@ const syncMutexService = require('./sync_mutex');
 const cls = require('./cls');
 const request = require('./request');
 const ws = require('./ws');
-const entityChangesService = require('./entity_changes.js');
-const entityConstructor = require('../entities/entity_constructor');
+const entityChangesService = require('./entity_changes');
+const entityConstructor = require('../becca/entity_constructor');
+const becca = require("../becca/becca");
 
 let proxyToggle = true;
 
@@ -26,7 +26,7 @@ async function sync() {
     try {
         return await syncMutexService.doExclusively(async () => {
             if (!syncOptions.isSyncSetup()) {
-                return { success: false, message: 'Sync not configured' };
+                return { success: false, errorCode: 'NOT_CONFIGURED', message: 'Sync not configured' };
             }
 
             let continueSync = false;
@@ -107,11 +107,11 @@ async function doLogin() {
         hash: hash
     });
 
-    if (sourceIdService.isLocalSourceId(resp.sourceId)) {
-        throw new Error(`Sync server has source ID ${resp.sourceId} which is also local. This usually happens when the sync client is (mis)configured to sync with itself (URL points back to client) instead of the correct sync server.`);
+    if (resp.instanceId === instanceId) {
+        throw new Error(`Sync server has member ID ${resp.instanceId} which is also local. This usually happens when the sync client is (mis)configured to sync with itself (URL points back to client) instead of the correct sync server.`);
     }
 
-    syncContext.sourceId = resp.sourceId;
+    syncContext.instanceId = resp.instanceId;
 
     const lastSyncedPull = getLastSyncedPull();
 
@@ -131,43 +131,46 @@ async function pullChanges(syncContext) {
 
     while (true) {
         const lastSyncedPull = getLastSyncedPull();
-        const changesUri = '/api/sync/changed?lastEntityChangeId=' + lastSyncedPull;
+        const logMarkerId = utils.randomString(10); // to easily pair sync events between client and server logs
+        const changesUri = `/api/sync/changed?instanceId=${instanceId}&lastEntityChangeId=${lastSyncedPull}&logMarkerId=${logMarkerId}`;
 
         const startDate = Date.now();
 
         const resp = await syncRequest(syncContext, 'GET', changesUri);
+        const {entityChanges, lastEntityChangeId} = resp;
+
+        outstandingPullCount = resp.outstandingPullCount;
 
         const pulledDate = Date.now();
 
-        outstandingPullCount = Math.max(0, resp.maxEntityChangeId - lastSyncedPull);
-
-        const {entityChanges} = resp;
-
-        if (entityChanges.length === 0) {
-            break;
-        }
-
         sql.transactional(() => {
             for (const {entityChange, entity} of entityChanges) {
-                if (!sourceIdService.isLocalSourceId(entityChange.sourceId)) {
+                const changeAppliedAlready = entityChange.changeId
+                    && !!sql.getValue("SELECT id FROM entity_changes WHERE changeId = ?", [entityChange.changeId]);
+
+                if (!changeAppliedAlready) {
                     if (!atLeastOnePullApplied) { // send only for first
                         ws.syncPullInProgress();
 
                         atLeastOnePullApplied = true;
                     }
 
-                    syncUpdateService.updateEntity(entityChange, entity, syncContext.sourceId);
+                    syncUpdateService.updateEntity(entityChange, entity, syncContext.instanceId);
                 }
-
-                outstandingPullCount = Math.max(0, resp.maxEntityChangeId - entityChange.id);
             }
 
-            setLastSyncedPull(entityChanges[entityChanges.length - 1].entityChange.id);
+            if (lastSyncedPull !== lastEntityChangeId) {
+                setLastSyncedPull(lastEntityChangeId);
+            }
         });
 
-        const sizeInKb = Math.round(JSON.stringify(resp).length / 1024);
+        if (entityChanges.length === 0) {
+            break;
+        } else {
+            const sizeInKb = Math.round(JSON.stringify(resp).length / 1024);
 
-        log.info(`Pulled ${entityChanges.length} changes in ${sizeInKb} KB, starting at entityChangeId=${lastSyncedPull} in ${pulledDate - startDate}ms and applied them in ${Date.now() - pulledDate}ms, ${outstandingPullCount} outstanding pulls`);
+            log.info(`Sync ${logMarkerId}: Pulled ${entityChanges.length} changes in ${sizeInKb} KB, starting at entityChangeId=${lastSyncedPull} in ${pulledDate - startDate}ms and applied them in ${Date.now() - pulledDate}ms, ${outstandingPullCount} outstanding pulls`);
+        }
     }
 
     log.info("Finished pull");
@@ -186,10 +189,9 @@ async function pushChanges(syncContext) {
         }
 
         const filteredEntityChanges = entityChanges.filter(entityChange => {
-            if (entityChange.sourceId === syncContext.sourceId) {
+            if (entityChange.instanceId === syncContext.instanceId) {
                 // this may set lastSyncedPush beyond what's actually sent (because of size limit)
                 // so this is applied to the database only if there's no actual update
-                // TODO: it would be better to simplify this somehow
                 lastSyncedPush = entityChange.id;
 
                 return false;
@@ -207,17 +209,19 @@ async function pushChanges(syncContext) {
             continue;
         }
 
-        const entityChangesRecords = getEntityChangesRecords(filteredEntityChanges);
+        const entityChangesRecords = getEntityChangeRecords(filteredEntityChanges);
         const startDate = new Date();
 
-        await syncRequest(syncContext, 'PUT', '/api/sync/update', {
-            sourceId: sourceIdService.getCurrentSourceId(),
-            entities: entityChangesRecords
+        const logMarkerId = utils.randomString(10); // to easily pair sync events between client and server logs
+
+        await syncRequest(syncContext, 'PUT', `/api/sync/update?logMarkerId=${logMarkerId}`, {
+            entities: entityChangesRecords,
+            instanceId
         });
 
         ws.syncPushInProgress();
 
-        log.info(`Pushing ${entityChangesRecords.length} sync changes in ` + (Date.now() - startDate.getTime()) + "ms");
+        log.info(`Sync ${logMarkerId}: Pushing ${entityChangesRecords.length} sync changes in ` + (Date.now() - startDate.getTime()) + "ms");
 
         lastSyncedPush = entityChangesRecords[entityChangesRecords.length - 1].entityChange.id;
 
@@ -248,6 +252,14 @@ async function checkContentHash(syncContext) {
     }
 
     const failedChecks = contentHashService.checkContentHashes(resp.entityHashes);
+
+    if (failedChecks.length > 0) {
+        // before requeuing sectors make sure the entity changes are correct
+        const consistencyChecks = require("./consistency_checks");
+        consistencyChecks.runEntityChangesChecks();
+
+        await syncRequest(syncContext, 'POST', `/api/sync/check-entity-changes`);
+    }
 
     for (const {entityName, sector} of failedChecks) {
         entityChangesService.addEntityChangesForSector(entityName, sector);
@@ -320,7 +332,7 @@ function getEntityChangeRow(entityName, entityId) {
     }
 }
 
-function getEntityChangesRecords(entityChanges) {
+function getEntityChangeRecords(entityChanges) {
     const records = [];
     let length = 0;
 
@@ -332,12 +344,6 @@ function getEntityChangesRecords(entityChanges) {
         }
 
         const entity = getEntityChangeRow(entityChange.entityName, entityChange.entityId);
-
-        if (entityChange.entityName === 'options' && !entity.isSynced) {
-            records.push({entityChange});
-
-            continue;
-        }
 
         const record = { entityChange, entity };
 
@@ -358,7 +364,14 @@ function getLastSyncedPull() {
 }
 
 function setLastSyncedPull(entityChangeId) {
-    optionService.setOption('lastSyncedPull', entityChangeId);
+    const lastSyncedPullOption = becca.getOption('lastSyncedPull');
+
+    if (lastSyncedPullOption) { // might be null in initial sync when becca is not loaded
+        lastSyncedPullOption.value = entityChangeId + '';
+    }
+
+    // this way we avoid updating entity_changes which otherwise means that we've never pushed all entity_changes
+    sql.execute("UPDATE options SET value = ? WHERE name = ?", [entityChangeId, 'lastSyncedPull']);
 }
 
 function getLastSyncedPush() {
@@ -372,7 +385,14 @@ function getLastSyncedPush() {
 function setLastSyncedPush(entityChangeId) {
     ws.setLastSyncedPush(entityChangeId);
 
-    optionService.setOption('lastSyncedPush', entityChangeId);
+    const lastSyncedPushOption = becca.getOption('lastSyncedPush');
+
+    if (lastSyncedPushOption) { // might be null in initial sync when becca is not loaded
+        lastSyncedPushOption.value = entityChangeId + '';
+    }
+
+    // this way we avoid updating entity_changes which otherwise means that we've never pushed all entity_changes
+    sql.execute("UPDATE options SET value = ? WHERE name = ?", [entityChangeId, 'lastSyncedPush']);
 }
 
 function getMaxEntityChangeId() {
@@ -383,22 +403,20 @@ function getOutstandingPullCount() {
     return outstandingPullCount;
 }
 
-sqlInit.dbReady.then(() => {
+require("../becca/becca_loader").beccaLoaded.then(() => {
     setInterval(cls.wrap(sync), 60000);
 
-    // kickoff initial sync immediately
+    // kickoff initial sync immediately, but should happen after initial consistency checks
     setTimeout(cls.wrap(sync), 5000);
-});
 
-if (sqlInit.isDbInitialized()) {
     // called just so ws.setLastSyncedPush() is called
     getLastSyncedPush();
-}
+});
 
 module.exports = {
     sync,
     login,
-    getEntityChangesRecords,
+    getEntityChangeRecords,
     getOutstandingPullCount,
     getMaxEntityChangeId
 };

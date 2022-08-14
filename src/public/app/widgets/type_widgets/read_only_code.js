@@ -1,30 +1,19 @@
 import TypeWidget from "./type_widget.js";
 
 const TPL = `
-<div class="note-detail-read-only-code note-detail-printable">
+<div class="note-detail-readonly-code note-detail-printable">
     <style>
-    .note-detail-read-only-code {
-        position: relative;
+    .note-detail-readonly-code {
         min-height: 50px;
+        position: relative;
     }
     
-    .note-detail-read-only-code-content {
+    .note-detail-readonly-code-content {
         padding: 10px;
-    }
-    
-    .edit-code-note-button {
-        position: absolute; 
-        top: 5px; 
-        right: 10px;
-        font-size: 130%;
-        cursor: pointer;
     }
     </style>
 
-    <div class="alert alert-warning no-print edit-code-note-button bx bx-edit-alt"
-         title="Edit this note"></div>
-
-    <pre class="note-detail-read-only-code-content"></pre>
+    <pre class="note-detail-readonly-code-content"></pre>
 </div>`;
 
 export default class ReadOnlyCodeTypeWidget extends TypeWidget {
@@ -32,19 +21,24 @@ export default class ReadOnlyCodeTypeWidget extends TypeWidget {
 
     doRender() {
         this.$widget = $(TPL);
-        this.contentSized();
-        this.$content = this.$widget.find('.note-detail-read-only-code-content');
+        this.$content = this.$widget.find('.note-detail-readonly-code-content');
 
-        this.$widget.find('.edit-code-note-button').on('click', () => {
-            this.tabContext.codePreviewDisabled = true;
-
-            this.triggerEvent('codePreviewDisabled', {tabContext: this.tabContext});
-        });
+        super.doRender();
     }
 
     async doRefresh(note) {
-        const noteComplement = await this.tabContext.getNoteComplement();
+        const noteComplement = await this.noteContext.getNoteComplement();
 
         this.$content.text(noteComplement.content);
+    }
+
+    async executeWithContentElementEvent({resolve, ntxId}) {
+        if (!this.isNoteContext(ntxId)) {
+            return;
+        }
+
+        await this.initialized;
+
+        resolve(this.$content);
     }
 }

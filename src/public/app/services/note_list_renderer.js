@@ -1,8 +1,8 @@
 import linkService from "./link.js";
 import noteContentRenderer from "./note_content_renderer.js";
-import treeCache from "./tree_cache.js";
-import attributeService from "./attributes.js";
+import froca from "./froca.js";
 import attributeRenderer from "./attribute_renderer.js";
+import libraryLoader from "./library_loader.js";
 
 const TPL = `
 <div class="note-list">
@@ -61,33 +61,31 @@ const TPL = `
         padding-top: 10px;
     }
     
-    .note-book-title {
+    .note-book-header {
         margin-bottom: 0;
         word-break: break-all;
     }
     
     /* not-expanded title is limited to one line only */
-    .note-book-card:not(.expanded) .note-book-title {
+    .note-book-card:not(.expanded) .note-book-header {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
     }
     
-    .note-book-title .rendered-note-attributes {
+    .note-book-header .rendered-note-attributes {
         font-size: medium;
     }
     
-    .note-book-title .rendered-note-attributes:before {
+    .note-book-header .rendered-note-attributes:before {
         content: "\\00a0\\00a0";
     }
     
-    .note-book-title .note-icon {
-        font-size: 120%;
+    .note-book-header .note-icon {
+        font-size: 100%;
         display: inline-block;
-        padding-right: 5px;
-        padding-left: 5px;
+        padding-right: 7px;
         position: relative;
-        top: 3px;
     }
     
     .note-book-card .note-book-card {
@@ -102,18 +100,20 @@ const TPL = `
         padding: 10px;
     }
     
-    .note-book-content.type-image img {
+    .note-book-content.type-image img, .note-book-content.type-canvas svg {
         max-width: 100%;
         max-height: 100%;
         object-fit: contain;
     }
     
-    .note-book-card.type-image .note-book-content img, .note-book-card.type-text .note-book-content img {
+    .note-book-card.type-image .note-book-content img,
+    .note-book-card.type-text .note-book-content img,
+    .note-book-card.type-canvas .note-book-content img {
         max-width: 100%;
         max-height: 100%;
     }
     
-    .note-book-title {
+    .note-book-header {
         flex-grow: 0;
     }
     
@@ -134,30 +134,6 @@ const TPL = `
     }
     </style>
     
-    <div class="btn-group floating-button" style="right: 20px; top: 10px;">
-        <button type="button"
-                class="collapse-all-button btn icon-button bx bx-layer-minus"
-                title="Collapse all notes"></button>
-
-        &nbsp;
-        
-        <button type="button"
-                class="expand-children-button btn icon-button bx bx-move-vertical"
-                title="Expand all children"></button>
-
-        &nbsp;
-
-        <button type="button"
-                class="list-view-button btn icon-button bx bx-menu"
-                title="List view"></button>
-
-        &nbsp;
-
-        <button type="button"
-                class="grid-view-button btn icon-button bx bx-grid-alt"
-                title="Grid view"></button>
-    </div>
-
     <div class="note-list-wrapper">
         <div class="note-list-pager"></div>
     
@@ -180,7 +156,7 @@ class NoteListRenderer {
         this.parentNote = parentNote;
         const includedNoteIds = this.getIncludedNoteIds();
 
-        this.noteIds = noteIds.filter(noteId => !includedNoteIds.has(noteId));
+        this.noteIds = noteIds.filter(noteId => !includedNoteIds.has(noteId) && noteId !== 'hidden');
 
         if (this.noteIds.length === 0) {
             return;
@@ -204,30 +180,10 @@ class NoteListRenderer {
 
         this.$noteList.addClass(this.viewType + '-view');
 
-        this.$noteList.find('.list-view-button').on('click', () => this.toggleViewType('list'));
-        this.$noteList.find('.grid-view-button').on('click', () => this.toggleViewType('grid'));
-
-        this.$noteList.find('.expand-children-button').on('click', async () => {
-            if (!this.parentNote.hasLabel('expanded')) {
-                await attributeService.addLabel(this.parentNote.noteId, 'expanded');
-            }
-
-            await this.renderList();
-        });
-
-        this.$noteList.find('.collapse-all-button').on('click', async () => {
-            // owned is important - we shouldn't remove inherited expanded labels
-            for (const expandedAttr of this.parentNote.getOwnedLabels('expanded')) {
-                await attributeService.removeAttributeById(this.parentNote.noteId, expandedAttr.attributeId);
-            }
-
-            await this.renderList();
-        });
-
         this.showNotePath = showNotePath;
     }
 
-    /** @return {Set<string>} list of noteIds included (images, included notes) into a parent note and which
+    /** @returns {Set<string>} list of noteIds included (images, included notes) into a parent note and which
      *                        don't have to be shown in the note list. */
     getIncludedNoteIds() {
         const includedLinks = this.parentNote
@@ -237,27 +193,19 @@ class NoteListRenderer {
         return new Set(includedLinks.map(rel => rel.value));
     }
 
-    async toggleViewType(type) {
-        if (type !== 'list' && type !== 'grid') {
-            throw new Error(`Invalid view type ${type}`);
-        }
-
-        this.viewType = type;
-
-        this.$noteList
-            .removeClass('grid-view')
-            .removeClass('list-view')
-            .addClass(this.viewType + '-view');
-
-        await attributeService.setLabel(this.parentNote.noteId, 'viewType', type);
-
-        await this.renderList();
-    }
-
     async renderList() {
         if (this.noteIds.length === 0) {
             this.$noteList.hide();
             return;
+        }
+
+        const highlightedTokens = this.parentNote.highlightedTokens || [];
+        if (highlightedTokens.length > 0) {
+            await libraryLoader.requireLibrary(libraryLoader.MARKJS);
+
+            this.highlightRegex = new RegExp(highlightedTokens.join("|"), 'gi');
+        } else {
+            this.highlightRegex = null;
         }
 
         this.$noteList.show();
@@ -268,7 +216,7 @@ class NoteListRenderer {
         const endIdx = startIdx + this.pageSize;
 
         const pageNoteIds = this.noteIds.slice(startIdx, Math.min(endIdx, this.noteIds.length));
-        const pageNotes = await treeCache.getNotes(pageNoteIds);
+        const pageNotes = await froca.getNotes(pageNoteIds);
 
         for (const note of pageNotes) {
             const $card = await this.renderNote(note, this.parentNote.hasLabel('expanded'));
@@ -324,12 +272,13 @@ class NoteListRenderer {
         const $card = $('<div class="note-book-card">')
             .attr('data-note-id', note.noteId)
             .append(
-                $('<h5 class="note-book-title">')
+                $('<h5 class="note-book-header">')
                     .append($expander)
                     .append($('<span class="note-icon">').addClass(note.getIcon()))
                     .append(this.viewType === 'grid'
-                        ? note.title
-                        : await linkService.createNoteLink(notePath, {showTooltip: false, showNotePath: this.showNotePath})
+                        ? $('<span class="note-book-title">').text(note.title)
+                        : (await linkService.createNoteLink(notePath, {showTooltip: false, showNotePath: this.showNotePath}))
+                            .addClass("note-book-title")
                     )
                     .append($renderedAttributes)
             );
@@ -343,6 +292,15 @@ class NoteListRenderer {
 
         $expander.on('click', () => this.toggleContent($card, note, !$card.hasClass("expanded")));
 
+        if (this.highlightRegex) {
+            $card.find(".note-book-title").markRegExp(this.highlightRegex, {
+                element: "span",
+                className: "ck-find-result",
+                separateWordSearch: false,
+                caseSensitive: false
+            });
+        }
+
         await this.toggleContent($card, note, expand);
 
         return $card;
@@ -353,7 +311,7 @@ class NoteListRenderer {
             return;
         }
 
-        const $expander = $card.find('> .note-book-title .note-expander');
+        const $expander = $card.find('> .note-book-header .note-expander');
 
         if (expand || this.viewType === 'grid') {
             $card.addClass("expanded");
@@ -376,6 +334,15 @@ class NoteListRenderer {
             const {$renderedContent, type} = await noteContentRenderer.getRenderedContent(note, {
                 trim: this.viewType === 'grid' // for grid only short content is needed
             });
+
+            if (this.highlightRegex) {
+                $renderedContent.markRegExp(this.highlightRegex, {
+                    element: "span",
+                    className: "ck-find-result",
+                    separateWordSearch: false,
+                    caseSensitive: false
+                });
+            }
 
             $content.append($renderedContent);
             $content.addClass("type-" + type);

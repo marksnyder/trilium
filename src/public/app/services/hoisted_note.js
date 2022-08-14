@@ -1,17 +1,18 @@
 import appContext from "./app_context.js";
 import treeService from "./tree.js";
+import dialogService from "../widgets/dialog.js";
 
 function getHoistedNoteId() {
-    const activeTabContext = appContext.tabManager.getActiveTabContext();
+    const activeNoteContext = appContext.tabManager.getActiveContext();
 
-    return activeTabContext ? activeTabContext.hoistedNoteId : 'root';
+    return activeNoteContext ? activeNoteContext.hoistedNoteId : 'root';
 }
 
 async function unhoist() {
-    const activeTabContext = appContext.tabManager.getActiveTabContext();
+    const activeNoteContext = appContext.tabManager.getActiveContext();
 
-    if (activeTabContext) {
-        await activeTabContext.unhoist();
+    if (activeNoteContext) {
+        await activeNoteContext.unhoist();
     }
 }
 
@@ -25,20 +26,18 @@ function isHoistedNode(node) {
         || node.data.noteId === getHoistedNoteId();
 }
 
-async function checkNoteAccess(notePath, tabContext) {
-    const resolvedNotePath = await treeService.resolveNotePath(notePath, tabContext.hoistedNoteId);
+async function checkNoteAccess(notePath, noteContext) {
+    const resolvedNotePath = await treeService.resolveNotePath(notePath, noteContext.hoistedNoteId);
 
     if (!resolvedNotePath) {
         console.log("Cannot activate " + notePath);
         return false;
     }
 
-    const hoistedNoteId = tabContext.hoistedNoteId;
+    const hoistedNoteId = noteContext.hoistedNoteId;
 
-    if (!resolvedNotePath.includes(hoistedNoteId)) {
-        const confirmDialog = await import('../dialogs/confirm.js');
-
-        if (!await confirmDialog.confirm("Requested note is outside of hoisted note subtree and you must unhoist to access the note. Do you want to proceed with unhoisting?")) {
+    if (!resolvedNotePath.includes(hoistedNoteId) && !resolvedNotePath.includes("hidden")) {
+        if (!await dialogService.confirm("Requested note is outside of hoisted note subtree and you must unhoist to access the note. Do you want to proceed with unhoisting?")) {
             return false;
         }
 
